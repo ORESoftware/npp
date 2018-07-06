@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "jobs": {
+    "build": {
+      "docker": [
+        {
+          "image": "circleci/node:10"
+        }
+      ],
+      "steps": [
+        {
+          "run": "npm set unsafe-perm true"
+        },
+
+        {
+          "run": "npm install -g --loglevel=warn @oresoftware/r2g"
+        }
+      ]
+    }
+  }
+}

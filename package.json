@@ -1,0 +1,36 @@
+{
+  "name": "typescript-library-skeleton",
+  "version": "0.0.1001",
+  "description": "Semver-oriented TypeScript library skeleton.",
+  "main": "dist/index.js",
+  "bin": {
+    "example": "cli/example.sh"
+  },
+  "types": "dist/index.d.ts",
+  "typings": "dist/index.d.ts",
+  "scripts": {
+    "test": "suman test",
+    "postinstall": "./assets/postinstall.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ORESoftware/typescript-library-skeleton.git"
+  },
+  "keywords": [
+    "typescript",
+    "library",
+    "skeleton",
+    "scaffold"
+  ],
+  "author": "TODO Yo.Mama",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "bugs": {
+    "url": "https://github.com/ORESoftware/typescript-library-skeleton/issues"
+  },
+  "homepage": "https://github.com/ORESoftware/typescript-library-skeleton#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/core-js": "^0.9.46",
+    "@types/node": "^9.6.2"
+  }
+}
