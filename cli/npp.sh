@@ -8,7 +8,7 @@ read_link="$(readlink "$0")";
 exec_dir="$(dirname $(dirname "$read_link"))";
 my_path="$dir_name/$exec_dir";
 basic_path="$(cd $(dirname ${my_path}) && pwd)/$(basename ${my_path})"
-js="$basic_path/dist/cli.js"
+commands="$basic_path/dist/commands"
 
 
 ### there is an extradinary amount of magic required to get a bash script
@@ -18,5 +18,24 @@ js="$basic_path/dist/cli.js"
 ### one value add here of using a bash script, is that we can easily install any missing CLI dependencies
 ### or set env variables as needed
 
-### run this mofo
-node "$js" "$@"
+
+first_arg="$1";
+shift 1;
+
+
+if [ "$first_arg" == "view" ]; then
+
+  // view table of projects
+  node "$commands/view" "$@"
+
+elif [ "$first_arg" == "publish" ]; then
+
+  node "$commands/publish" "$@"
+
+else
+
+  node "$commands/basic" "$@"
+
+fi
+
+
