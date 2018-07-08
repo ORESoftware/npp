@@ -1,10 +1,10 @@
 {
-  "name": "typescript-library-skeleton",
+  "name": "@oresoftware/npp",
   "version": "0.0.1001",
   "description": "Semver-oriented TypeScript library skeleton.",
   "main": "dist/index.js",
   "bin": {
-    "example": "cli/example.sh"
+    "npp": "cli/npp.sh"
   },
   "types": "dist/index.d.ts",
   "typings": "dist/index.d.ts",
@@ -14,7 +14,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ORESoftware/typescript-library-skeleton.git"
+    "url": "git+https://github.com/ORESoftware/npp.git"
   },
   "keywords": [
     "typescript",
@@ -22,12 +22,12 @@
     "skeleton",
     "scaffold"
   ],
-  "author": "TODO Yo.Mama",
+  "author": "Olegzandr V.D.",
   "license": "SEE LICENSE IN LICENSE.md",
   "bugs": {
-    "url": "https://github.com/ORESoftware/typescript-library-skeleton/issues"
+    "url": "https://github.com/ORESoftware/npp/issues"
   },
-  "homepage": "https://github.com/ORESoftware/typescript-library-skeleton#readme",
+  "homepage": "https://github.com/ORESoftware/npp#readme",
   "dependencies": {
     "async": "^2.6.1",
     "chalk": "^2.4.1",
