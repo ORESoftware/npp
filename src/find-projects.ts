@@ -6,19 +6,32 @@ import async = require('async');
 import log from "./logger";
 import * as util from "util";
 import chalk from "chalk";
-
+import {getCurrentBranchName, getStatus} from "./git-helpers";
 
 export interface Packages {
   [key: string]: boolean | string
 }
 
+export enum GitStatus {
+  NOT_A_GIT_REPO = '(not a git repo)',
+  CLEAN = '(clean - nothing to commit)',
+  HAS_CHANGES = '(git repo has uncommitted changes)'
+}
 
 export interface SearchResult {
-   branch: string,
-   version: string,
-   name: string,
-   path: string
+  branch: string,
+  version: string,
+  name: string,
+  path: string,
+  upToDateWithRemote: boolean,
+  workingDirectoryClean: boolean
 }
+
+export interface Map {
+  [key: string]: SearchResult
+}
+
+export type EVCallbackResult = (err: any, v?: Map) => void;
 
 export type EVCallback = (err: any, v?: any) => void;
 
@@ -26,7 +39,7 @@ export type EVCallback = (err: any, v?: any) => void;
 
 export const getFSMap = function (opts: any, searchRoot: string, packages: Packages, cb: EVCallback) {
 
-  const map = {} as { [key: string]: string };
+  const map: Map = {};
 
   const searchDir = function (dir: string, cb: any) {
 
@@ -82,7 +95,13 @@ export const getFSMap = function (opts: any, searchRoot: string, packages: Packa
             return cb(null);
           }
 
-          fs.readFile(item, function (err, data) {
+          async.autoInject({
+
+            readPackageJSON(cb: EVCallback) {
+              fs.readFile(item, cb);
+            }
+
+          }, (err, results) => {
 
             if (err) {
               return cb(err);
@@ -91,7 +110,7 @@ export const getFSMap = function (opts: any, searchRoot: string, packages: Packa
             let parsed = null;
 
             try {
-              parsed = JSON.parse(String(data));
+              parsed = JSON.parse(String(results.readPackageJSON));
             }
             catch (err) {
               log.error('trouble parsing package.json file at path => ', item);
@@ -99,28 +118,58 @@ export const getFSMap = function (opts: any, searchRoot: string, packages: Packa
               return cb(err);
             }
 
-            if (parsed && parsed.name) {
 
-              let nm = parsed.name;
+            let name = parsed.name;
+            let version = parsed.version;
 
-              if (map[nm] && packages[nm]) {
-
-                log.warn('the following package may exist in more than one place on your fs =>', chalk.magenta(nm));
-                log.warn('pre-existing place => ', chalk.blueBright(map[nm]));
-                log.warn('new place => ', chalk.blueBright(item));
-
-                return cb(
-                  new Error('The following requested package name exists in more than 1 location on disk, and docker.r2g does not know which one to use ... ' +
-                    chalk.magentaBright.bold(util.inspect({name: nm, locations: [map[nm], item]})))
-                )
-              }
-              else if (packages[parsed.name]) {
-                log.info('added the following package name to the map:', parsed.name);
-                map[parsed.name] = item;
-              }
+            if (!packages[name]) {
+              return cb(null);
             }
 
-            cb(null);
+            if (map[name]) {
+
+              log.warn('the following package may exist in more than one place on your fs =>', chalk.magenta(name));
+              log.warn('pre-existing place => ', map[name]);
+              log.warn('new place => ', chalk.blueBright(item));
+
+              return cb(
+                new Error('The following requested package name exists in more than 1 location on disk, and docker.r2g does not know which one to use ... ' +
+                  chalk.magentaBright.bold(util.inspect({name: name, locations: [map[name], item]})))
+              )
+            }
+
+            if (!(parsed && parsed.name && parsed.version)) {
+              return cb(new Error('Project at the following path is missing either "name" or "version" in package.json => ' + item));
+            }
+
+            async.autoInject({
+
+                checkGitStatus(cb: EVCallback) {
+                  getStatus(dir, '<remote>', cb);
+                },
+
+                getBranchName(checkGitStatus: any, cb: EVCallback) {
+                  getCurrentBranchName(dir, '<remote>', cb);
+                }
+
+              },
+
+              (err, results) => {
+
+                log.info('added the following package name to the map:', name);
+                map[name] = {
+                  name,
+                  version,
+                  branch: results.getBranchName,
+                  upToDateWithRemote: results.checkGitStatus.upToDateWithRemote,
+                  workingDirectoryClean: results.checkGitStatus.workingDirectoryClean,
+                  path: dir,
+
+                };
+
+                cb(null);
+
+              });
 
           });
 
