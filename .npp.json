@@ -1,12 +1,14 @@
 {
-  "branch":"master",
+  "vcs": "git",
+  "branch": "master",
   "remoteTrackingBranch": "origin/master",
   "searchRoot": "$HOME/WebstormProjects",
   "searchRoots": [
-
   ],
   "packages": {
     "@oresoftware/r2g": true,
-    "suman": true
+    "suman": true,
+    "suman-types": true,
+    "suman-watch": true
   }
 }

@@ -160,7 +160,7 @@ export const getFSMap = function (opts: any, searchRoot: string, packages: Packa
                 map[name] = {
                   name,
                   version,
-                  branch: results.getBranchName,
+                  branch: results.getBranchName.branchName,
                   upToDateWithRemote: results.checkGitStatus.upToDateWithRemote,
                   workingDirectoryClean: results.checkGitStatus.workingDirectoryClean,
                   path: dir,
