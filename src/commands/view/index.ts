@@ -41,38 +41,38 @@ catch (err) {
 
 const searchRoot = primaryNPPFile.searchRoot;
 const packages = primaryNPPFile.packages;
-log.info('packages:', packages);
 
 async.autoInject({
 
-  mapPaths(cb: EVCallback) {
-    mapPaths([searchRoot], cb);
+    mapPaths(cb: EVCallback) {
+      mapPaths([searchRoot], cb);
+    },
+
+    getMap(mapPaths: Array<string>, cb: EVCallback) {
+      getFSMap({}, mapPaths[0], packages, cb);
+    }
+
   },
 
-  getMap(mapPaths: Array<string>, cb: EVCallback) {
-    console.log('map-paths:', mapPaths);
-    getFSMap({}, mapPaths[0], packages, cb);
-  }
+  (err, results) => {
 
-}, (err, results) => {
+    if (err) {
+      throw err;
+    }
 
-  if (err) {
-    throw err;
-  }
+    const map = results.getMap;
 
-  const map = results.getMap;
+    Object.keys(map).forEach(k => {
 
-  Object.keys(map).forEach(k => {
+      const v = map[k];
+      table.push(Object.values(v));
 
-    const v = map[k];
-    table.push(Object.values(v));
+    });
+
+    const str = table.toString().split('\n').map((v: string) => '  ' + v).join('\n');
+    console.log(str);
 
   });
-
-  const str = table.toString().split('\n').map((v: string) => '  ' + v).join('\n');
-  console.log(str);
-
-});
 
 
 
