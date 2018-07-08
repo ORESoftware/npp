@@ -32,7 +32,6 @@ export interface Map {
 }
 
 export type EVCallbackResult = (err: any, v?: Map) => void;
-
 export type EVCallback = (err: any, v?: any) => void;
 
 /////////////////////////////////////////////////////////////////////
