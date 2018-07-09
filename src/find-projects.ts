@@ -67,6 +67,10 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
     fs.readdir(dir, function (err, items) {
 
       if (err) {
+        if(String(err.message || err).match(/permission denied/)){
+          log.warn(err.message || err);
+          return cb(null);
+        }
         return cb(err);
       }
 
@@ -140,13 +144,35 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
             }
 
             let name = parsed.name;
-            let version = parsed.version;
+
 
             if (!packages[name]) {
               return cb(null);
             }
 
-            if (map[name]) {
+
+            let npp = null;
+
+            try {
+              npp = require(path.resolve(dir + '/.npp.json'));
+            }
+            catch (err) {
+              log.warn('no .npp.json file at path => ', item);
+            }
+
+            let version = parsed.version;
+            let publishable = parsed.npp && parsed.npp.publishable === true;
+            // let notPublishable = parsed.npp && parsed.npp.publishable === false;
+
+            if(npp === null && publishable !== true){
+              log.warn('Skipping the following package name:', name, 'at path:', dir);
+              log.warn('This package was skipped because it either did not have an .npp.json file, or npp.publishable in package.json was not set to true');
+              log.warn('Here is npp in package.json:', parsed.npp);
+              log.warn('Here is publishable:', publishable);
+              return cb(null);
+            }
+
+            if (map[name] && (npp || publishable)) {
 
               log.warn('the following package may exist in more than one place on your fs =>', chalk.magenta(name));
               log.warn('pre-existing place => ', map[name]);

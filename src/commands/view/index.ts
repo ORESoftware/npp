@@ -11,6 +11,14 @@ log.info(chalk.blueBright(
   'running view'
 ));
 
+
+process.once('exit', code => {
+  console.log();
+  log.info('Run with --verbosity=x to see more information, if need be.');
+  log.info('Exiting with code:', code);
+  console.log();
+});
+
 const Table = require('cli-table');
 const table = new Table({
   // colWidths: [200, 100, 100, 100, 100, 100, 100],
