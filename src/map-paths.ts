@@ -2,6 +2,7 @@
 
 import * as cp from 'child_process';
 import log from './logger';
+import * as path from "path";
 
 // mapPaths takes an array of paths/strings with env vars, and expands each one
 
@@ -44,9 +45,16 @@ export const mapPaths = (searchRoots: Array<string>, cb: Function) => {
     .sort((a,b) => (a.length - b.length))
     .forEach(v => {
 
+      // const s1 = !pths.some(p => {
+      //   return v.startsWith(p);
+      // });
+
       const s = !pths.some(p => {
-        return p.startsWith(v);
+        return v.startsWith(p + '/');
       });
+
+      //    "/home/oleg/WebstormProjects/oresoftware/sumanjs/suman",
+      //    "/home/oleg/WebstormProjects/oresoftware/sumanjs/suman-types",
 
       if (s) {
         pths.push(v);
@@ -54,6 +62,7 @@ export const mapPaths = (searchRoots: Array<string>, cb: Function) => {
 
     });
 
+    console.log('the paths:',pths);
     cb(code, pths);
 
   });

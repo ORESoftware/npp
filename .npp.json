@@ -5,6 +5,7 @@
   "searchRoots": [
     "/home/oleg/WebstormProjects/oresoftware/r2g",
     "/home/oleg/WebstormProjects/oresoftware/sumanjs/suman",
+    "/home/oleg/WebstormProjects/oresoftware",
     "/home/oleg/WebstormProjects/oresoftware/sumanjs/suman-types",
     "/home/oleg/WebstormProjects/oresoftware/sumanjs/suman-watch"
   ],
