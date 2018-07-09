@@ -2,8 +2,12 @@
   "vcs": "git",
   "branch": "master",
   "remoteTrackingBranch": "origin/master",
-  "searchRoot": "$HOME/WebstormProjects",
+  "foo": "$HOME/WebstormProjects",
   "searchRoots": [
+    "/home/oleg/WebstormProjects/oresoftware/r2g",
+    "/home/oleg/WebstormProjects/oresoftware/sumanjs/suman",
+    "/home/oleg/WebstormProjects/oresoftware/sumanjs/suman-types",
+    "/home/oleg/WebstormProjects/oresoftware/sumanjs/suman-watch"
   ],
   "packages": {
     "@oresoftware/r2g": true,

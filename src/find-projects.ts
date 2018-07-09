@@ -34,11 +34,33 @@ export interface Map {
 export type EVCallbackResult = (err: any, v?: Map) => void;
 export type EVCallback = (err: any, v?: any) => void;
 
-/////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
-export const getFSMap = function (opts: any, searchRoot: string, packages: Packages, cb: EVCallback) {
+const q = async.queue((task, cb) => task(cb), 3);
+
+export const getFSMap = function (searchRoots: Array<string>, opts: any, packages: Packages, cb: EVCallbackResult) {
 
   const map: Map = {};
+
+  const status = {
+    searching: true,
+    first: true
+  };
+
+  q.error = q.drain = function (err?: any) {
+
+    if (err) {
+      status.searching = false;
+      log.error(chalk.magenta('There was a search queue processing error.'));
+    }
+
+    if (status.first) {
+      q.kill();
+      cb(err, map);
+    }
+
+    status.first = false;
+  };
 
   const searchDir = function (dir: string, cb: any) {
 
@@ -117,7 +139,6 @@ export const getFSMap = function (opts: any, searchRoot: string, packages: Packa
               return cb(err);
             }
 
-
             let name = parsed.name;
             let version = parsed.version;
 
@@ -187,9 +208,14 @@ export const getFSMap = function (opts: any, searchRoot: string, packages: Packa
 
   };
 
-  searchDir(searchRoot, function (err: any) {
-    err && log.error('unexpected error:', err.message || err);
-    cb(err, map);
+  searchRoots.forEach(v => {
+    q.push(function (cb: EVCallback) {
+      searchDir(v, cb);
+    })
   });
+
+  if (q.idle()) {
+    return process.nextTick(cb, new Error('For some reason, no paths/items went onto the search queue.'));
+  }
 
 };

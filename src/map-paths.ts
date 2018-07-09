@@ -18,17 +18,21 @@ export const mapPaths = (searchRoots: Array<string>, cb: Function) => {
   k.stderr.pipe(process.stderr);
 
   k.stdout.on('data', (d: string) => {
-    results.push(d);
+    String(d || '').split('\n')
+    .map(v => String(v || '').trim())
+    .filter(Boolean).forEach(v => {
+      results.push(v);
+    });
   });
 
-  k.once('error',  (e) => {
+  k.once('error', (e) => {
     log.error(e.stack || e);
     cb(e);
   });
 
   k.once('exit', code => {
 
-    if(code > 0){
+    if (code > 0) {
       log.error('Could not map paths.');
       return cb(code);
     }

@@ -39,17 +39,17 @@ catch (err) {
   throw err.message;
 }
 
-const searchRoot = primaryNPPFile.searchRoot;
+const searchRoots = primaryNPPFile.searchRoots;
 const packages = primaryNPPFile.packages;
 
 async.autoInject({
 
     mapPaths(cb: EVCallback) {
-      mapPaths([searchRoot], cb);
+      mapPaths(searchRoots, cb);
     },
 
     getMap(mapPaths: Array<string>, cb: EVCallback) {
-      getFSMap({}, mapPaths[0], packages, cb);
+      getFSMap(mapPaths, {}, packages, cb);
     }
 
   },
