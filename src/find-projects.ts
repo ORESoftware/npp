@@ -42,6 +42,26 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
 
   const map: Map = {};
 
+  const alreadySearched: { [key: string]: true } = {};
+
+  const isSearchable = function (p: string) {
+
+    if (alreadySearched[p]) {
+      return false;
+    }
+
+    const keys = Object.keys(alreadySearched);
+
+    if(keys.length < 1){
+      return true;
+    }
+
+    return !keys.some(v => {
+      return v.startsWith(p);
+    });
+
+  };
+
   const status = {
     searching: true,
     first: true
@@ -64,10 +84,16 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
 
   const searchDir = function (dir: string, cb: any) {
 
+    if (!isSearchable(dir)) {
+      return process.nextTick(cb);
+    }
+
+    alreadySearched[dir] = true;
+
     fs.readdir(dir, function (err, items) {
 
       if (err) {
-        if(String(err.message || err).match(/permission denied/)){
+        if (String(err.message || err).match(/permission denied/)) {
           log.warn(err.message || err);
           return cb(null);
         }
@@ -91,6 +117,10 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
           }
 
           if (stats.isDirectory()) {
+
+            // if (!isSearchable(dir)) {
+            //   return cb(null);
+            // }
 
             if (item.endsWith('/.npm') || item.endsWith('/.npm/')) {
               return cb(null);
@@ -145,16 +175,15 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
 
             let name = parsed.name;
 
-
             if (!packages[name]) {
               return cb(null);
             }
 
-
             let npp = null;
+            const nppPath = path.resolve(dir + '/.npp.json');
 
             try {
-              npp = require(path.resolve(dir + '/.npp.json'));
+              npp = require(nppPath);
             }
             catch (err) {
               log.warn('no .npp.json file at path => ', item);
@@ -164,7 +193,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
             let publishable = parsed.npp && parsed.npp.publishable === true;
             // let notPublishable = parsed.npp && parsed.npp.publishable === false;
 
-            if(npp === null && publishable !== true){
+            if (npp === null && publishable !== true) {
               log.warn('Skipping the following package name:', name, 'at path:', dir);
               log.warn('This package was skipped because it either did not have an .npp.json file, or npp.publishable in package.json was not set to true');
               log.warn('Here is npp in package.json:', parsed.npp);
@@ -186,6 +215,23 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
 
             if (!(parsed && parsed.name && parsed.version)) {
               return cb(new Error('Project at the following path is missing either "name" or "version" in package.json => ' + item));
+            }
+
+            if (npp && npp.searchRoots) {
+              try {
+                npp.searchRoots.forEach(v => {
+                  if(isSearchable(v)){
+                    log.info('adding this to the search queue:', v);
+                    // q.push(function (cb: EVCallback) {
+                    //   searchDir(v, cb);
+                    // });
+                  }
+                });
+              }
+              catch (err) {
+                log.error(err);
+                return cb(new Error('npp.searchRoots was problematic (probably not an array), at path: ' + chalk.magenta(nppPath)));
+              }
             }
 
             async.autoInject({
@@ -235,9 +281,11 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
   };
 
   searchRoots.forEach(v => {
+    log.info('Adding the following path to the search queue:', v);
     q.push(function (cb: EVCallback) {
+      log.info('Now searching path:', v);
       searchDir(v, cb);
-    })
+    });
   });
 
   if (q.idle()) {

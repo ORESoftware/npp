@@ -3,7 +3,8 @@
   "branch": "master",
   "remoteTrackingBranch": "origin/master",
   "searchRoots": [
-    "$HOME/WebstormProjects/oresoftware"
+    "$HOME/WebstormProjects/oresoftware",
+    "$HOME/WebstormProjects/oresoftware/sumanjs"
   ],
   "packages": {
     "@oresoftware/r2g": true,

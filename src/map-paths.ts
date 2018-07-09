@@ -37,10 +37,24 @@ export const mapPaths = (searchRoots: Array<string>, cb: Function) => {
       return cb(code);
     }
 
-    const pths = results
-    .map(d => String(d || '').trim())
-    .filter(Boolean);
+    const pths: Array<string> = [];
 
+    results.map(d => String(d || '').trim())
+    .filter(Boolean)
+    .sort((a,b) => (a.length - b.length))
+    .forEach(v => {
+
+      const s = !pths.some(p => {
+        return v.startsWith(p);
+      });
+
+      if (s) {
+        pths.push(v);
+      }
+
+    });
+
+    console.log('the paths:', pths);
     cb(code, pths);
 
   });
