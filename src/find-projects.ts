@@ -44,6 +44,10 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
 
   const alreadySearched: { [key: string]: true } = {};
 
+  const isBasicSearchable = function(p: string){
+    return !alreadySearched[p];
+  };
+
   const isSearchable = function (p: string) {
 
     if (alreadySearched[p]) {
@@ -57,7 +61,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
     }
 
     return !keys.some(v => {
-      return v.startsWith(p + '/');
+      return p.startsWith(v);
     });
 
   };
@@ -84,7 +88,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
 
   const searchDir = function (dir: string, cb: any) {
 
-    if (!isSearchable(dir)) {
+    if (!isBasicSearchable(dir)) {
       return process.nextTick(cb);
     }
 
@@ -130,7 +134,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
 
           if (stats.isDirectory()) {
 
-            if (!isSearchable(item)) {
+            if (!isBasicSearchable(item)) {
               return cb(null);
             }
 
