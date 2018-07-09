@@ -88,9 +88,17 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
       return process.nextTick(cb);
     }
 
+    if(status.searching === false){
+      return process.nextTick(cb);
+    }
+
     alreadySearched[dir] = true;
 
     fs.readdir(dir, function (err, items) {
+
+      if(status.searching === false){
+        return cb(null);
+      }
 
       if (err) {
         if (String(err.message || err).match(/permission denied/)) {
@@ -106,6 +114,10 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
 
         fs.lstat(item, function (err, stats) {
 
+          if(status.searching === false){
+            return cb(null);
+          }
+
           if (err) {
             log.warn(err.message);
             return cb(null);
@@ -118,9 +130,18 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
 
           if (stats.isDirectory()) {
 
-            // if (!isSearchable(dir)) {
-            //   return cb(null);
-            // }
+            if (!isSearchable(item)) {
+              return cb(null);
+            }
+
+
+            if (item.endsWith('/.idea') || item.endsWith('/.idea/')) {
+              return cb(null);
+            }
+
+            if (item.endsWith('/.git') || item.endsWith('/.git/')) {
+              return cb(null);
+            }
 
             if (item.endsWith('/.npm') || item.endsWith('/.npm/')) {
               return cb(null);
@@ -157,6 +178,10 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
             }
 
           }, (err, results) => {
+
+            if(status.searching === false){
+              return cb(null);
+            }
 
             if (err) {
               return cb(err);
@@ -222,9 +247,10 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                 npp.searchRoots.forEach(v => {
                   if(isSearchable(v)){
                     log.info('adding this to the search queue:', v);
-                    // q.push(function (cb: EVCallback) {
-                    //   searchDir(v, cb);
-                    // });
+                    q.push(function (cb: EVCallback) {
+                      log.info('Now searching path:', v);
+                      searchDir(v, cb);
+                    });
                   }
                 });
               }
