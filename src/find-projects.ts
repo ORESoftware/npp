@@ -61,7 +61,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
     }
 
     return !keys.some(v => {
-      return p.startsWith(v);
+      return p.startsWith(v + '/');
     });
 
   };
