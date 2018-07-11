@@ -42,19 +42,12 @@ export const mapPaths = (searchRoots: Array<string>, cb: Function) => {
 
     results.map(d => String(d || '').trim())
     .filter(Boolean)
-    .sort((a,b) => (a.length - b.length))
+    .sort((a, b) => (a.length - b.length))
     .forEach(v => {
-
-      // const s1 = !pths.some(p => {
-      //   return v.startsWith(p);
-      // });
 
       const s = !pths.some(p => {
         return v.startsWith(p + '/');
       });
-
-      //    "/home/oleg/WebstormProjects/oresoftware/sumanjs/suman",
-      //    "/home/oleg/WebstormProjects/oresoftware/sumanjs/suman-types",
 
       if (s) {
         pths.push(v);
@@ -62,7 +55,7 @@ export const mapPaths = (searchRoots: Array<string>, cb: Function) => {
 
     });
 
-    console.log('the paths:',pths);
+    console.log('the paths:', pths);
     cb(code, pths);
 
   });

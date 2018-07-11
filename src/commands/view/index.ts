@@ -11,7 +11,6 @@ log.info(chalk.blueBright(
   'running view'
 ));
 
-
 process.once('exit', code => {
   console.log();
   log.info('Run with --verbosity=x to see more information, if need be.');
@@ -23,7 +22,7 @@ const Table = require('cli-table');
 const table = new Table({
   // colWidths: [200, 100, 100, 100, 100, 100, 100],
 
-  head: ['Name', 'Version', 'Current Branch', 'Clean?', 'Up-to-Date?', 'Path']
+  head: ['Name', 'Local Version', 'NPM Registry Version', 'Current Branch', 'Clean?', 'Up-to-Date?', 'Path']
 });
 
 const flattenDeep = function (a: Array<any>): Array<any> {

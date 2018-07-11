@@ -6,7 +6,9 @@ import async = require('async');
 import log from "./logger";
 import * as util from "util";
 import chalk from "chalk";
-import {getCurrentBranchName, getStatus} from "./git-helpers";
+import {BranchNameData, getCurrentBranchName, getStatus, GitStatusData} from "./git-helpers";
+import {getLatestVersionFromNPMRegistry, RegistryData} from "./npm-helpers";
+import {EVCb} from "./index";
 
 export interface Packages {
   [key: string]: boolean | string
@@ -20,7 +22,8 @@ export enum GitStatus {
 
 export interface SearchResult {
   branch: string,
-  version: string,
+  localVersion: string,
+  npmVersion:string,
   name: string,
   path: string,
   upToDateWithRemote: boolean,
@@ -31,14 +34,12 @@ export interface Map {
   [key: string]: SearchResult
 }
 
-export type EVCallbackResult = (err: any, v?: Map) => void;
-export type EVCallback = (err: any, v?: any) => void;
 
 //////////////////////////////////////////////////////////////////////////
 
 const q = async.queue((task, cb) => task(cb), 3);
 
-export const getFSMap = function (searchRoots: Array<string>, opts: any, packages: Packages, cb: EVCallbackResult) {
+export const getFSMap = function (searchRoots: Array<string>, opts: any, packages: Packages, cb: EVCb<any>) {
 
   const map: Map = {};
 
@@ -177,7 +178,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
 
           async.autoInject({
 
-            readPackageJSON(cb: EVCallback) {
+            readPackageJSON(cb: EVCb<any>) {
               fs.readFile(item, cb);
             }
 
@@ -251,7 +252,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                 npp.searchRoots.forEach(v => {
                   if(isSearchable(v)){
                     log.info('adding this to the search queue:', v);
-                    q.push(function (cb: EVCallback) {
+                    q.push(function (cb: EVCb<any>) {
                       log.info('Now searching path:', v);
                       searchDir(v, cb);
                     });
@@ -266,11 +267,15 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
 
             async.autoInject({
 
-                checkGitStatus(cb: EVCallback) {
+                getLatestVersionFromNPMRegistry(cb: EVCb<RegistryData>) {
+                  getLatestVersionFromNPMRegistry(dir, name, cb);
+                },
+
+                checkGitStatus(cb: EVCb<GitStatusData>) {
                   getStatus(dir, '<remote>', cb);
                 },
 
-                getBranchName(checkGitStatus: any, cb: EVCallback) {
+                getBranchName(checkGitStatus: any, cb: EVCb<BranchNameData>) {
                   getCurrentBranchName(dir, '<remote>', cb);
                 }
 
@@ -281,7 +286,8 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                 log.info('added the following package name to the map:', name);
                 map[name] = {
                   name,
-                  version,
+                  localVersion: version,
+                  npmVersion: results.getLatestVersionFromNPMRegistry.npmVersion,
                   branch: results.getBranchName.branchName,
                   upToDateWithRemote: results.checkGitStatus.upToDateWithRemote,
                   workingDirectoryClean: results.checkGitStatus.workingDirectoryClean,
@@ -312,7 +318,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
 
   searchRoots.forEach(v => {
     log.info('Adding the following path to the search queue:', v);
-    q.push(function (cb: EVCallback) {
+    q.push(function (cb: EVCb<any>) {
       log.info('Now searching path:', v);
       searchDir(v, cb);
     });
