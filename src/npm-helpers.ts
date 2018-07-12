@@ -7,13 +7,8 @@ import {EVCb} from "./index";
 ////////////////////////////////////////////////////////////////
 
 
-export interface RegistryData {
-  exitCode: number,
-  npmVersion: string
-}
 
-
-export const getLatestVersionFromNPMRegistry = function (dir: string, name: string, cb: EVCb<RegistryData>) {
+export const getLatestVersionFromNPMRegistry = function (dir: string, name: string, cb: EVCb<typeof result>) {
 
   const k = cp.spawn('bash', [], {
     cwd: dir
@@ -21,8 +16,8 @@ export const getLatestVersionFromNPMRegistry = function (dir: string, name: stri
 
   k.stdin.end(`npm view ${name}@latest version;`);
 
-  const result : RegistryData = {
-    exitCode: null,
+  const result  = {
+    exitCode: null as number,
     npmVersion: ''
   };
 

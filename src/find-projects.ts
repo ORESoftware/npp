@@ -284,6 +284,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
               (err, results) => {
 
                 log.info('added the following package name to the map:', name);
+
                 map[name] = {
                   name,
                   localVersion: version,
