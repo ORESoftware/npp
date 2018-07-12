@@ -37,7 +37,8 @@ export interface Map {
 
 //////////////////////////////////////////////////////////////////////////
 
-const q = async.queue((task, cb) => task(cb), 3);
+export type Task = (cb: EVCb<any>) => void;
+const q = async.queue<Task, any>((task, cb) => task(cb), 3);
 
 export const getFSMap = function (searchRoots: Array<string>, opts: any, packages: Packages, cb: EVCb<any>) {
 
