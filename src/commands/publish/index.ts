@@ -15,6 +15,7 @@ import * as semver from 'semver';
 const inquirer = require('inquirer');
 import * as cp from 'child_process';
 import * as assert from "assert";
+import * as fs from 'fs';
 import {getViewTable} from "../../tables";
 
 log.info(chalk.blueBright(
@@ -27,6 +28,11 @@ process.once('exit', code => {
   log.info('Exiting with code:', code);
   console.log();
 });
+
+export interface ReleaseInfo {
+  releaseName: string,
+  gitRemoteURL: string
+}
 
 const allowUnknown = process.argv.indexOf('--allow-unknown') > 0;
 let opts: PublishOpts, parser = dashdash.createParser({options, allowUnknown});
@@ -53,26 +59,21 @@ const table = new Table({
   head: viewTable.map(v => v.header)
 });
 
-
 const cwd = process.cwd();
 const projectRoot = residence.findProjectRoot(cwd);
 
-if (!projectRoot) {
-  throw 'Could not find project root given current working directory: ' + chalk.blueBright(cwd);
-}
-
-let primaryNPPFile = null;
+let rootNPPFile = null;
 
 try {
-  primaryNPPFile = require(path.resolve(projectRoot + '/.npp.json'));
+  rootNPPFile = require(path.resolve(cwd + '/.npp.root.json'));
 }
 catch (err) {
   log.error('Could not load your primary project\'s .npp.json file.');
   throw err.message;
 }
 
-const searchRoots = primaryNPPFile.searchRoots;
-const packages = primaryNPPFile.packages;
+const searchRoots = rootNPPFile.searchRoots;
+const packages = rootNPPFile.packages;
 const promptColorFn = chalk.bgBlueBright.whiteBright.bold;
 
 async.autoInject({
@@ -98,9 +99,9 @@ async.autoInject({
 
       Object.keys(clonedMap).forEach(k => {
 
-        const value  = clonedMap[k];
+        const value = clonedMap[k];
 
-        if(!value.vcs){
+        if (!value.vcs) {
           console.error();
           log.error('We need to know what vcs you are using in project:', chalk.blueBright(value.path));
           log.error('Please add vcs information to the .npp.json file here:', chalk.blueBright(path.resolve(value.path + '/.npp.json')));
@@ -108,7 +109,7 @@ async.autoInject({
           process.exit(1);
         }
 
-        if(value.vcs.type !== 'git'){
+        if (value.vcs.type !== 'git') {
           console.error();
           log.error('Currenly NPP only supports Git, as far as version control. The following package declared a VCS other than git:', value.path);
           log.error('If this was a mistake, you can update your .npp.json file here:', path.resolve(value.path + '/.npp.json'));
@@ -119,11 +120,9 @@ async.autoInject({
           allUpToDateWithRemote = false;
         }
 
-
         if (!value.workingDirectoryClean) {
           allClean = false;
         }
-
 
         table.push(viewTable.map(v => (value as any)[v.value]));
       });
@@ -319,13 +318,15 @@ async.autoInject({
 
     },
 
-    startPublish(areYouReadyToPublish: any, choosePublishingOrder: Array<SearchResult>, cb: EVCb<any>) {
+    startPublish(areYouReadyToPublish: any, chooseNewVersion: string, choosePublishingOrder: Array<SearchResult>, cb: EVCb<any>) {
 
       const publishArray = choosePublishingOrder.slice(0);
 
       async.mapLimit(publishArray, 1, (v, cb) => {
 
           const k = cp.spawn('bash');
+
+          log.info('Checking out release branch in path:', v.path);
 
           let pck = null, pkgJSONPath = path.resolve(v.path + '/package.json');
 
@@ -344,7 +345,7 @@ async.autoInject({
             return cb(err);
           }
 
-          const releaseName = v.releaseBranchName = `${process.env.USER}/release/${Date.now()}`;
+          const releaseName = v.releaseBranchName = `${process.env.USER}/npp_tool/release/${Date.now()}`;
 
           const cmd = [
             `cd ${v.path}`,
@@ -356,53 +357,150 @@ async.autoInject({
 
           k.once('exit', code => {
 
-            if(code > 0){
+            if (code > 0) {
               return cb({
                 'message': 'Could not run command in package root / could not checkout release branch from the current branch.',
                 cmd,
                 code,
                 path: v.path,
-                package: v.name
+                packageName: v.name
               });
             }
 
-            cb(null, v);
+            log.info('Successfully checked out release branch for path:', v.path);
+            log.info('Now we are modifying the package.json file in that path to reflect the version bump.');
+
+            fs.readFile(pkgJSONPath, (err, data) => {
+
+              if (err) {
+                return cb(err);
+              }
+
+              let pjson: any = null;
+
+              try {
+                pjson = JSON.parse(String(data));
+              }
+              catch (err) {
+                log.error('Could not parse package.json file at path:', v.path);
+                return cb(err);
+              }
+
+              pjson.version = chooseNewVersion;
+
+              ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'].forEach(d => {
+                Object.keys(packages).forEach(v => {
+                  if (pjson[d] && typeof pjson[d] === 'object') {
+                    if (v in pjson[d]) {
+                      pjson[d][v] = chooseNewVersion;
+                    }
+                  }
+                });
+              });
+
+              let stringified: string = null;
+
+              try {
+                stringified = JSON.stringify(pjson, null, 2);
+              }
+              catch (err) {
+                log.error('Could not call JSON.stringify on:', pjson);
+                return cb(err);
+              }
+
+              fs.writeFile(pkgJSONPath, stringified, err => {
+
+                if (err) {
+                  log.error('Could not write to this path:', pkgJSONPath);
+                  log.error('The data we were trying to write to the oath was:', stringified);
+                  return cb(err);
+                }
+
+                log.info('Successfully updated package.json at path:', v.path);
+
+                cb(null, v);
+
+              });
+
+            });
 
           });
         },
-       cb);
+        cb);
 
     },
 
-     modifyReleaseBranches(startPublish: Array<any>, cb: EVCb<any>){
+    modifyReleaseBranches(startPublish: Array<SearchResult>, cb: EVCb<Array<ReleaseInfo>>) {
 
-      async.eachLimit(startPublish, 1, (v, cb) => {
+      async.mapLimit(startPublish, 1, (v, cb) => {
 
         const releaseName = v.releaseBranchName;
         const k = cp.spawn('bash');
 
+        log.info('Checking to see if we can merge the release branch into master for path:', v.path);
+
         const cmd = [
+          `cd ${v.path}`,
+          `git checkout "${releaseName}"`,
+          `git add .`,
+          `git commit -am "modified package.json"`,
           `git checkout master`,
           `git pull`,
-          `git branch -D -f master_copy_npp_tool || echo "Could not delete branch named 'master_copy_npp_tool'"`,
+          `( git branch -D -f master_copy_npp_tool &> /dev/null || echo "" ) `,
           `git checkout -b master_copy_npp_tool`,
-          `git merge --no-commit -m "dummy_message" "${releaseName}"`,
+          `git merge --no-commit -m "This release branch should be merged into master and integration." "${releaseName}"`,
           `git checkout ${releaseName}`,
           `git push -u origin ${releaseName}`
         ]
         .join(' && ');
 
+        k.stdin.end(cmd);
+        k.stderr.pipe(process.stderr);
+
+        k.once('exit', code => {
+
+          if (code > 0) {
+
+            log.error('Could not merge release branch into master branch for path:', v.path);
+            log.error('Please inspect your git repo at path:', v.path);
+
+            return cb({
+              code,
+              message: 'Could not run command at path: ' + v.path,
+              cmd,
+              path: v.path,
+              packageName: v.name
+            });
+          }
+
+          log.info('The release branch should be mergeable to the master branch at path:', v.path)
+
+          cb(null, {
+            releaseName,
+            gitRemoteURL: 'dummy value fix later',
+          });
+
+        });
+
+      }, cb);
+
+    },
+
+    mergeReleaseBranches(modifyReleaseBranches: Array<ReleaseInfo>, cb: EVCb<any>) {
+
+      console.log();
+
+      modifyReleaseBranches.forEach(v => {
+        log.info('Release branch:', v.releaseName, 'at remote:', v.gitRemoteURL);
       });
 
-     },
-
-     mergeReleaseBranches(startPublish: any, cb: EVCb<any>){
+      console.log();
 
       // the user must merge the release branches into master, before we actually publish to NPM
-       const prompt = rl.createInterface({
-         input: process.stdin,
-         output: process.stdout
-       });
+      const prompt = rl.createInterface({
+        input: process.stdin,
+        output: process.stdout
+      });
 
       prompt.question('Your release branches have all been created at the above locations. ' +
         'Please merge them all into their respective master branches. That might take you some time, that is OK. To contine hit return.', (answer) => {
@@ -410,7 +508,7 @@ async.autoInject({
         cb(null);
       });
 
-     }
+    }
 
   },
 

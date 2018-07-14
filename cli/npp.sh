@@ -25,7 +25,7 @@ shift 1;
 
 if [ "$first_arg" == "view" ] || [ "$first_arg" == "v" ]; then
 
-  // view table of projects
+  # view table of projects
   node "$commands/view" "$@"
 
 elif [ "$first_arg" == "publish" ] || [ "$first_arg" == "p" ]; then

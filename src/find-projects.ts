@@ -10,6 +10,7 @@ import {BranchNameData, getCurrentBranchName, getStatus, GitStatusData} from "./
 import {getLatestVersionFromNPMRegistry, RegistryData} from "./npm-helpers";
 import {EVCb, NppJSONConf, VCSType} from "./index";
 import {flattenDeep} from "./utils";
+import {mapPaths} from "./map-paths";
 
 export interface Packages {
   [key: string]: boolean | string
@@ -94,6 +95,8 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
 
   const searchDir = function (dir: string, cb: any) {
 
+    log.debug('Searching dir:', dir);
+
     if (!isBasicSearchable(dir)) {
       return process.nextTick(cb);
     }
@@ -111,8 +114,8 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
       }
 
       if (err) {
+        log.warn(err.message || err);
         if (String(err.message || err).match(/permission denied/)) {
-          log.warn(err.message || err);
           return cb(null);
         }
         return cb(err);
@@ -210,6 +213,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
             let name = parsedPkgJSON.name;
 
             if (!packages[name]) {
+              log.debug('The following name was not in the packages map from .npp.json:', name);
               return cb(null);
             }
 
@@ -252,20 +256,20 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
             }
 
             if (npp && npp.searchRoots) {
-                flattenDeep([npp.searchRoots]).forEach(v => {
 
-                  if(typeof v !== 'string'){
-                    log.warn('Search-root was not a string:', v);
-                    return
-                  }
+                const filtered = flattenDeep([npp.searchRoots]).map(v => String(v || '').trim()).filter(Boolean);
+                mapPaths(filtered, (err, results) => {
 
-                  if (isSearchable(v)) {
-                    log.info('adding this to the search queue:', v);
-                    q.push(function (cb: EVCb<any>) {
-                      log.info('Now searching path:', v);
-                      searchDir(v, cb);
-                    });
-                  }
+                  results.forEach(v => {
+                    if (isSearchable(v)) {
+                      log.info('adding this to the search queue:', v);
+                      q.push(function (cb: EVCb<any>) {
+                        log.info('Now searching path:', v);
+                        searchDir(v, cb);
+                      });
+                    }
+                  });
+
                 });
             }
 

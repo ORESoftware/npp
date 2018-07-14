@@ -3,10 +3,11 @@
 import * as cp from 'child_process';
 import log from './logger';
 import * as path from "path";
+import {EVCb} from "./index";
 
 // mapPaths takes an array of paths/strings with env vars, and expands each one
 
-export const mapPaths = (searchRoots: Array<string>, cb: Function) => {
+export const mapPaths = (searchRoots: Array<string>, cb: EVCb<Array<string>>) => {
 
   const mappedRoots = searchRoots.map(function (v) {
     return `echo "${v}"`;
@@ -54,6 +55,7 @@ export const mapPaths = (searchRoots: Array<string>, cb: Function) => {
 
     });
 
+    log.debug('mapped pths:',pths);
     cb(code, pths);
 
   });
