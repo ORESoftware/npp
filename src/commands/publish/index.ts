@@ -13,6 +13,8 @@ const dashdash = require('dashdash');
 import * as rl from 'readline';
 import * as semver from 'semver';
 const inquirer = require('inquirer');
+import * as cp from 'child_process';
+import * as assert from "assert";
 
 log.info(chalk.blueBright(
   'running publish'
@@ -95,10 +97,10 @@ async.autoInject({
 
       Object.keys(clonedMap).forEach(k => {
         const v = clonedMap[k];
-        if(!v.upToDateWithRemote){
-           allUpToDateWithRemote = false;
+        if (!v.upToDateWithRemote) {
+          allUpToDateWithRemote = false;
         }
-        if(!v.workingDirectoryClean){
+        if (!v.workingDirectoryClean) {
           allClean = false;
         }
         table.push(Object.values(v));
@@ -108,11 +110,11 @@ async.autoInject({
       console.log(str);
       console.log();
 
-      if(!allClean){
+      if (!allClean) {
         log.warn('Note that at least one package has working changes that have not been committed.');
       }
 
-      if(!allUpToDateWithRemote){
+      if (!allUpToDateWithRemote) {
         log.warn('Note that at least one package has commits that have not made it to the remote.');
       }
 
@@ -190,11 +192,9 @@ async.autoInject({
       ['major', 'minor', 'patch', 'premajor', 'preminor', 'prepatch', 'prerelease'].forEach(function (v) {
         log.info(
           `If you are bumping a ${chalk.bold(v)} version, npp recommends this version:`,
-          chalk.blueBright.bold(semver.inc(oldestVersion, v as any, opts.release))
+          chalk.blueBright.bold(semver.inc(oldestVersion, v as any, null, opts.release))
         );
       });
-
-
 
       (function runPrompt() {
 
@@ -272,7 +272,7 @@ async.autoInject({
 
     },
 
-    areYouReadyToPublish(choosePublishingOrder: Array<SearchResult>, cb: EVCb<any>){
+    areYouReadyToPublish(choosePublishingOrder: Array<SearchResult>, cb: EVCb<any>) {
 
       console.log();
 
@@ -294,6 +294,57 @@ async.autoInject({
         process.exit(1);
 
       });
+
+    },
+
+    runPublish(areYouReadyToPublish: any, choosePublishingOrder: Array<SearchResult>, cb: EVCb<any>) {
+
+      async.eachLimit(choosePublishingOrder.slice(0), 1, (v, cb) => {
+
+          const k = cp.spawn('bash');
+
+          let pck = null, pkgJSONPath = path.resolve(v.path + '/package.json');
+
+          try {
+            pck = require(pkgJSONPath);
+          }
+          catch (err) {
+            log.error('Could not load package.json file at path:', pkgJSONPath);
+            return cb(err);
+          }
+
+          try {
+            assert.strictEqual(pck.name, v.name, 'Package names do not match, this is an implementation error.');
+          }
+          catch (err) {
+            return cb(err);
+          }
+
+          const cmd = [
+            `cd ${v.path}`,
+            ``
+
+          ]
+          .join(' && ');
+
+          k.stdin.end(cmd);
+
+          k.once('exit', code => {
+
+            let err = code < 1 ? null : {
+              'message': 'Could not run command in package root.',
+              cmd,
+              code,
+              path: v.path,
+              package: v.name
+            };
+
+            cb(err);
+
+          });
+
+        },
+        cb);
 
     }
 

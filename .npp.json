@@ -14,6 +14,6 @@
     "suman-types": true,
     "suman-watch": true
   },
-  "checkoutReleaseBranch": "",
-  "pushToRemote": ""
+  "checkoutReleaseBranch": "echo '123 checking out release branch...'",
+  "pushToRemote": "echo '456 pushing to remote...'"
 }

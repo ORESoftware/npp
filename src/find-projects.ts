@@ -27,7 +27,8 @@ export interface SearchResult {
   name: string,
   path: string,
   upToDateWithRemote: boolean,
-  workingDirectoryClean: boolean
+  workingDirectoryClean: boolean,
+  packageJSON: any
 }
 
 export interface SearchResultMap {
@@ -191,10 +192,10 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
               return cb(err);
             }
 
-            let parsed = null;
+            let parsedPkgJSON : any = null;
 
             try {
-              parsed = JSON.parse(String(results.readPackageJSON));
+              parsedPkgJSON = JSON.parse(String(results.readPackageJSON));
             }
             catch (err) {
               log.error('trouble parsing package.json file at path => ', item);
@@ -202,7 +203,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
               return cb(err);
             }
 
-            let name = parsed.name;
+            let name = parsedPkgJSON.name;
 
             if (!packages[name]) {
               return cb(null);
@@ -218,14 +219,14 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
               log.warn('no .npp.json file at path => ', item);
             }
 
-            let version = parsed.version;
-            let publishable = parsed.npp && parsed.npp.publishable === true;
+            let version = parsedPkgJSON.version;
+            let publishable = parsedPkgJSON.npp && parsedPkgJSON.npp.publishable === true;
             // let notPublishable = parsed.npp && parsed.npp.publishable === false;
 
             if (npp === null && publishable !== true) {
               log.warn('Skipping the following package name:', name, 'at path:', dir);
               log.warn('This package was skipped because it either did not have an .npp.json file, or npp.publishable in package.json was not set to true');
-              log.warn('Here is npp in package.json:', parsed.npp);
+              log.warn('Here is npp in package.json:', parsedPkgJSON.npp);
               log.warn('Here is publishable:', publishable);
               return cb(null);
             }
@@ -242,7 +243,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
               )
             }
 
-            if (!(parsed && parsed.name && parsed.version)) {
+            if (!(parsedPkgJSON && parsedPkgJSON.name && parsedPkgJSON.version)) {
               return cb(new Error('Project at the following path is missing either "name" or "version" in package.json => ' + item));
             }
 
@@ -301,6 +302,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                   workingDirectoryClean: results.checkGitStatus.workingDirectoryClean,
                   upToDateWithRemote: results.checkGitStatus.upToDateWithRemote,
                   path: dir,
+                  packageJSON: parsedPkgJSON,
                 };
 
                 cb(null);
