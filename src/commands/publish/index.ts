@@ -14,7 +14,6 @@ import * as rl from 'readline';
 import * as semver from 'semver';
 const inquirer = require('inquirer');
 
-
 log.info(chalk.blueBright(
   'running publish'
 ));
@@ -91,7 +90,7 @@ async.autoInject({
 
       const clonedMap = Object.assign({}, getMap);
 
-      if(Object.keys(clonedMap).length < 1){
+      if (Object.keys(clonedMap).length < 1) {
         return process.nextTick(cb, chalk.magenta("No relevant projects/packages were found on your fs, here were your original searchRoots: ") + chalk.magentaBright(searchRoots));
       }
 
@@ -179,19 +178,19 @@ async.autoInject({
         console.log();
         prompt.question(chalk.bold.blueBright(' => Given the version info, what version would you like to bump the projects to? '), (answer) => {
 
-          try{
+          try {
 
-             if(semver.valid(answer)){
-               log.info('The following version is valid:', chalk.blueBright.bold(answer));
-               log.info('We will use that version for all the packages in the tree.');
-               console.log();
-               return cb(null,answer);
-             }
+            if (semver.valid(answer)) {
+              log.info('The following version is valid:', chalk.blueBright.bold(answer));
+              log.info('We will use that version for all the packages in the tree.');
+              console.log();
+              return cb(null, answer);
+            }
 
-             throw 'Semver version was invalid for version: ' + answer;
+            throw 'Semver version was invalid for version: ' + answer;
 
           }
-          catch(err){
+          catch (err) {
             log.warn(err);
             log.warn('Please try entering in a semver version again.');
             runPrompt();
@@ -205,8 +204,8 @@ async.autoInject({
 
     choosePublishingOrder(chooseNewVersion: string, confirmProjects: SearchResultMap, cb: EVCb<any>) {
 
-      const keys  = Object.keys(confirmProjects);
-      const list : Array<SearchResult> = [];
+      const keys = Object.keys(confirmProjects);
+      const list: Array<SearchResult> = [];
 
       (function ask() {
 
@@ -218,26 +217,24 @@ async.autoInject({
             choices: keys
           }
         ])
-        .then((answers:any) => {
+        .then((answers: any) => {
 
           const k = answers.nextPackage;
           list.push(confirmProjects[k]);
 
           const index = keys.indexOf(k);
-          keys.splice(index,1);
+          keys.splice(index, 1);
 
-          if(keys.length > 1){
-            rl.clearLine(process.stdout,0);
+          if (keys.length > 1) {
+            rl.clearLine(process.stdout, 0);
             return ask();
           }
 
-
-            list.push(confirmProjects[keys[0]]); // there is one remaining
-            console.log();
-            log.info(chalk.blueBright('Your packages will be published in the following order:'));
-            list.map(v => v.name).forEach((v,i) => log.info(i+1,v));
-            cb(null, list);
-
+          list.push(confirmProjects[keys[0]]); // there is one remaining
+          console.log();
+          log.info(chalk.blueBright('Your packages will be published in the following order:'));
+          list.map(v => v.name).forEach((v, i) => log.info(chalk.bold(String(i + 1)), chalk.bgBlueBright(v)));
+          cb(null, list);
 
         });
 
