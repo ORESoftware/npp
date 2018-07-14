@@ -30,7 +30,8 @@ export interface SearchResult {
   upToDateWithRemote: boolean,
   workingDirectoryClean: boolean,
   packageJSON: any,
-  vcs: VCSType
+  vcs: VCSType,
+  validNPPJSON: boolean
 }
 
 export interface SearchResultMap {
@@ -271,11 +272,10 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
 
                 getLatestVersionFromNPMRegistry(cb: EVCb<RegistryData>) {
 
-                  if (!opts.registry) {
-
+                  if (!opts.view_npm_registry) {
                     return process.nextTick(cb, null, <RegistryData> {
                       exitCode: null,
-                      npmVersion: '(use --registry option)'
+                      npmVersion: ''
                     });
                   }
 
@@ -305,7 +305,8 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                   upToDateWithRemote: results.checkGitStatus.upToDateWithRemote,
                   path: dir,
                   packageJSON: parsedPkgJSON,
-                  vcs: npp && npp.vcs || null
+                  vcs: npp && npp.vcs || null,
+                  validNPPJSON: true
                 };
 
                 cb(null);

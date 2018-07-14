@@ -15,7 +15,7 @@ import * as semver from 'semver';
 const inquirer = require('inquirer');
 import * as cp from 'child_process';
 import * as assert from "assert";
-import {viewTable} from "../../tables";
+import {getViewTable} from "../../tables";
 
 log.info(chalk.blueBright(
   'running publish'
@@ -44,15 +44,15 @@ if (opts.help) {
   process.exit(0);
 }
 
-const Table = require('cli-table');
+const viewTable = getViewTable(opts);
+
+import Table = require('cli-table');
 const table = new Table({
   // colWidths: [200, 100, 100, 100, 100, 100, 100],
-  head: ['Name', 'Local Version', 'NPM Registry Version', 'Current Branch', 'Clean?', 'Up-to-Date?', 'Path']
+  colors: false,
+  head: viewTable.map(v => v.header)
 });
 
-const flattenDeep = function (a: Array<any>): Array<any> {
-  return a.reduce((acc, val) => Array.isArray(val) ? acc.concat(flattenDeep(val)) : acc.concat(val), []);
-};
 
 const cwd = process.cwd();
 const projectRoot = residence.findProjectRoot(cwd);
@@ -97,15 +97,34 @@ async.autoInject({
       let allUpToDateWithRemote = true;
 
       Object.keys(clonedMap).forEach(k => {
-        const value : any = clonedMap[k];
+
+
+        const value  = clonedMap[k];
+
+        if(!value.vcs){
+          log.error('We need to know what vcs you are using in project:', value.path);
+          log.error('Please add vcs information to the .npp.json files:', path.resolve(value.path + '/.npp.json'));
+          process.exit(1);
+        }
+
+        if(value.vcs.type !== 'git'){
+          log.error('Currenly NPP only supports Git, as far as version control. The following package declared a VCS other than git:', value.path);
+          log.error('If this was a mistake, you can update your .npp.json file here:', path.resolve(value.path + '/.npp.json'));
+          process.exit(1);
+        }
+
         if (!value.upToDateWithRemote) {
           allUpToDateWithRemote = false;
         }
+
+
         if (!value.workingDirectoryClean) {
           allClean = false;
         }
-        // table.push(Object.values(v));
-        table.push(viewTable.map(v => value[v.value]));
+
+
+
+        table.push(viewTable.map(v => (value as any)[v.value]));
       });
 
       const str = table.toString().split('\n').map((v: string) => '  ' + v).join('\n');

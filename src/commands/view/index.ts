@@ -9,8 +9,9 @@ import {mapPaths} from "../../map-paths";
 import {EVCb} from "../../index";
 import options, {ViewOpts} from './cli-opts';
 import * as path from "path";
-import {viewTable} from "../../tables";
+import {getViewTable} from "../../tables";
 const dashdash = require('dashdash');
+
 
 log.info(chalk.blueBright(
   'running view'
@@ -42,7 +43,7 @@ if (opts.help) {
 }
 
 
-
+const viewTable = getViewTable(opts);
 const Table = require('cli-table');
 const table = new Table({
   // colWidths: [200, 100, 100, 100, 100, 100, 100],

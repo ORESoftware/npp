@@ -14,7 +14,12 @@ const options = [
     help: 'Print this help and exit.'
   },
   {
-    names: ['registry'],
+    names: ['view-npm-registry','view-registry'],
+    type: 'bool',
+    help: 'See data from the NPM registry.'
+  },
+  {
+    names: ['view-packages-path','view-full-path','view-path'],
     type: 'bool',
     help: 'See data from the NPM registry.'
   },

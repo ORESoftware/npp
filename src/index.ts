@@ -13,7 +13,7 @@ export interface VCSType {
   type: 'git' | 'svn' | 'hg',
   value: {
     master: string
-    integration: string
+    integration: string  | null
   }
 }
 

@@ -1,42 +1,63 @@
 
 
-export const viewTable = [
-  {
-    header: 'Name',
-    value: 'name'
-  },
-  {
-    header: 'Local Version',
-    value: 'localVersion'
-  },
+export const getViewTable = function(opts: any){
 
-  {
-    header: 'NPM Registry Version',
-    value: 'npmRegistryVersion'
-  },
+  return [
+    {
+      header: 'Name',
+      value: 'name'
+    },
+    {
+      header: 'Has valid .npp.json?',
+      value: 'validNPPJSON'
+    },
+    {
+      header: 'Local Version',
+      value: 'localVersion'
+    },
 
-  {
-    header: 'Current Branch',
-    value: 'currentBranch'
-  },
+    {
+      header: 'NPM Registry Version',
+      value: 'npmRegistryVersion',
+      conditionals: ['view_npm_registry']
+    },
 
-  {
-    header: 'Clean?',
-    value: 'workingDirectoryClean'
-  },
+    {
+      header: 'Current Branch',
+      value: 'currentBranch'
+    },
 
-  {
-    header: 'Up-to-Date with remote?',
-    value: 'upToDateWithRemote'
-  },
+    {
+      header: 'Clean?',
+      value: 'workingDirectoryClean'
+    },
 
-  {
-    header: 'Path',
-    value: 'path'
-  },
+    {
+      header: 'Up-to-Date with remote?',
+      value: 'upToDateWithRemote'
+    },
+
+    {
+      header: 'Path',
+      value: 'path',
+      conditionals: ['view_packages_path']
+    },
+
+
+  ].filter(v => {
+
+    if(!v.conditionals){
+      return true;
+    }
+
+    return v.conditionals.some(v => {
+      return opts[v] === true;
+    });
+
+  });
+
+
+};
 
 
 
-
-
-];

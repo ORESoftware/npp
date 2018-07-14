@@ -13,6 +13,16 @@ const options =  [
     help: 'Verbosity level, 1-3 inclusive.'
   },
   {
+    names: ['view-npm-registry','view-registry'],
+    type: 'bool',
+    help: 'See data from the NPM registry.'
+  },
+  {
+    names: ['view-packages-path','view-path'],
+    type: 'bool',
+    help: 'See data from the NPM registry.'
+  },
+  {
     names: ['release'],
     type: 'string',
     help: 'Either "beta", "alpha" or "rc".',
