@@ -32,14 +32,18 @@
     "async": "^2.6.1",
     "chalk": "^2.4.1",
     "cli-table": "^0.3.1",
-    "residence": "0.0.210"
+    "dashdash": "^1.14.1",
+    "inquirer": "^6.0.0",
+    "residence": "0.0.210",
+    "semver": "^5.5.0"
   },
   "devDependencies": {
     "@types/async": "^2.0.49",
     "@types/core-js": "^0.9.46",
-    "@types/node": "^9.6.2"
+    "@types/node": "^9.6.2",
+    "@types/semver": "^5.5.0"
   },
-  "npp":{
+  "npp": {
     "publishable": true
   }
 }

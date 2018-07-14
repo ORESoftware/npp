@@ -55,7 +55,6 @@ export const mapPaths = (searchRoots: Array<string>, cb: Function) => {
 
     });
 
-    console.log('the paths:', pths);
     cb(code, pths);
 
   });

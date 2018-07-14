@@ -3,9 +3,13 @@
 import log from '../../logger';
 import chalk from 'chalk';
 import residence = require('residence');
-import {EVCallback, getFSMap} from "../../find-projects";
+import {getFSMap} from "../../find-projects";
 import async = require('async');
 import {mapPaths} from "../../map-paths";
+import {EVCb} from "../../index";
+import options, {ViewOpts} from './cli-opts';
+import * as path from "path";
+const dashdash = require('dashdash');
 
 log.info(chalk.blueBright(
   'running view'
@@ -18,10 +22,29 @@ process.once('exit', code => {
   console.log();
 });
 
+
+
+const allowUnknown = process.argv.indexOf('--allow-unknown') > 0;
+let opts: ViewOpts,  parser = dashdash.createParser({options, allowUnknown});
+
+try {
+  opts = parser.parse(process.argv);
+} catch (e) {
+  log.error(chalk.magenta(' => CLI parsing error:'), chalk.magentaBright.bold(e.message));
+  process.exit(1);
+}
+
+if (opts.help) {
+  let help = parser.help({includeEnv: true}).trimRight();
+  console.log('usage: npp view [OPTIONS]\n' + 'options:\n' + help);
+  process.exit(0);
+}
+
+
+
 const Table = require('cli-table');
 const table = new Table({
   // colWidths: [200, 100, 100, 100, 100, 100, 100],
-
   head: ['Name', 'Local Version', 'NPM Registry Version', 'Current Branch', 'Clean?', 'Up-to-Date?', 'Path']
 });
 
@@ -39,7 +62,7 @@ if (!projectRoot) {
 let primaryNPPFile = null;
 
 try {
-  primaryNPPFile = require(projectRoot + '/.npp.json');
+  primaryNPPFile = require(path.resolve(projectRoot + '/.npp.json'));
 }
 catch (err) {
   log.error('Could not load your primary project\'s .npp.json file.');
@@ -51,12 +74,12 @@ const packages = primaryNPPFile.packages;
 
 async.autoInject({
 
-    mapPaths(cb: EVCallback) {
+    mapPaths(cb: EVCb<any>) {
       mapPaths(searchRoots, cb);
     },
 
-    getMap(mapPaths: Array<string>, cb: EVCallback) {
-      getFSMap(mapPaths, {}, packages, cb);
+    getMap(mapPaths: Array<string>, cb: EVCb<any>) {
+      getFSMap(mapPaths, opts, packages, cb);
     }
 
   },

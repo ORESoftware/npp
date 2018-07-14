@@ -8,7 +8,7 @@ import * as util from "util";
 import chalk from "chalk";
 import {BranchNameData, getCurrentBranchName, getStatus, GitStatusData} from "./git-helpers";
 import {getLatestVersionFromNPMRegistry, RegistryData} from "./npm-helpers";
-import {EVCb} from "./index";
+import {EVCb, NppJSONConf} from "./index";
 
 export interface Packages {
   [key: string]: boolean | string
@@ -23,17 +23,16 @@ export enum GitStatus {
 export interface SearchResult {
   branch: string,
   localVersion: string,
-  npmVersion:string,
+  npmVersion: string,
   name: string,
   path: string,
   upToDateWithRemote: boolean,
   workingDirectoryClean: boolean
 }
 
-export interface Map {
+export interface SearchResultMap {
   [key: string]: SearchResult
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -42,11 +41,11 @@ const q = async.queue<Task, any>((task, cb) => task(cb), 3);
 
 export const getFSMap = function (searchRoots: Array<string>, opts: any, packages: Packages, cb: EVCb<any>) {
 
-  const map: Map = {};
+  const map: SearchResultMap = {};
 
   const alreadySearched: { [key: string]: true } = {};
 
-  const isBasicSearchable = function(p: string){
+  const isBasicSearchable = function (p: string) {
     return !alreadySearched[p];
   };
 
@@ -58,7 +57,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
 
     const keys = Object.keys(alreadySearched);
 
-    if(keys.length < 1){
+    if (keys.length < 1) {
       return true;
     }
 
@@ -94,7 +93,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
       return process.nextTick(cb);
     }
 
-    if(status.searching === false){
+    if (status.searching === false) {
       return process.nextTick(cb);
     }
 
@@ -102,7 +101,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
 
     fs.readdir(dir, function (err, items) {
 
-      if(status.searching === false){
+      if (status.searching === false) {
         return cb(null);
       }
 
@@ -120,7 +119,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
 
         fs.lstat(item, function (err, stats) {
 
-          if(status.searching === false){
+          if (status.searching === false) {
             return cb(null);
           }
 
@@ -139,7 +138,6 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
             if (!isBasicSearchable(item)) {
               return cb(null);
             }
-
 
             if (item.endsWith('/.idea') || item.endsWith('/.idea/')) {
               return cb(null);
@@ -185,7 +183,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
 
           }, (err, results) => {
 
-            if(status.searching === false){
+            if (status.searching === false) {
               return cb(null);
             }
 
@@ -210,7 +208,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
               return cb(null);
             }
 
-            let npp = null;
+            let npp: NppJSONConf = null;
             const nppPath = path.resolve(dir + '/.npp.json');
 
             try {
@@ -251,7 +249,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
             if (npp && npp.searchRoots) {
               try {
                 npp.searchRoots.forEach(v => {
-                  if(isSearchable(v)){
+                  if (isSearchable(v)) {
                     log.info('adding this to the search queue:', v);
                     q.push(function (cb: EVCb<any>) {
                       log.info('Now searching path:', v);
@@ -269,6 +267,15 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
             async.autoInject({
 
                 getLatestVersionFromNPMRegistry(cb: EVCb<RegistryData>) {
+
+                  if (!opts.registry) {
+
+                    return process.nextTick(cb, null, <RegistryData> {
+                      exitCode: null,
+                      npmVersion: '(use --registry option)'
+                    });
+                  }
+
                   getLatestVersionFromNPMRegistry(dir, name, cb);
                 },
 
@@ -294,7 +301,6 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                   upToDateWithRemote: results.checkGitStatus.upToDateWithRemote,
                   workingDirectoryClean: results.checkGitStatus.workingDirectoryClean,
                   path: dir,
-
                 };
 
                 cb(null);
@@ -319,9 +325,9 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
   };
 
   searchRoots.forEach(v => {
-    log.info('Adding the following path to the search queue:', v);
+    log.info('Adding the following path to the search queue:', chalk.gray.bold(v));
     q.push(function (cb: EVCb<any>) {
-      log.info('Now searching path:', v);
+      log.info('Now searching path:', chalk.gray.bold(v));
       searchDir(v, cb);
     });
   });

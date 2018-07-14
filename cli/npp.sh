@@ -23,12 +23,12 @@ first_arg="$1";
 shift 1;
 
 
-if [ "$first_arg" == "view" ]; then
+if [ "$first_arg" == "view" ] || [ "$first_arg" == "v" ]; then
 
   // view table of projects
   node "$commands/view" "$@"
 
-elif [ "$first_arg" == "publish" ]; then
+elif [ "$first_arg" == "publish" ] || [ "$first_arg" == "p" ]; then
 
   node "$commands/publish" "$@"
 
