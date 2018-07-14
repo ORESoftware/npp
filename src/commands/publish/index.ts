@@ -17,6 +17,7 @@ import * as cp from 'child_process';
 import * as assert from "assert";
 import * as fs from 'fs';
 import {getViewTable} from "../../tables";
+import pt from 'prepend-transform';
 
 log.info(chalk.blueBright(
   'running publish'
@@ -353,9 +354,13 @@ async.autoInject({
           const cmd = [
             `cd ${v.path}`,
             `git checkout master`,  // checkout the integration branch first
+            `git pull`,
             `git checkout -b "${releaseName}"` //  `git checkout "${releaseName}" HEAD`,
           ]
           .join(' && ');
+
+
+          k.stderr.pipe(pt(chalk.yellow.bold(`${v.name}: `))).pipe(process.stderr);
 
           k.stdin.end(cmd);
 
@@ -438,6 +443,8 @@ async.autoInject({
 
       async.mapLimit(startPublish, 1, (v, cb) => {
 
+
+        console.log();
         const releaseName = v.releaseBranchName;
         const k = cp.spawn('bash');
 
@@ -449,7 +456,6 @@ async.autoInject({
           `git add .`,
           `git commit -am "modified package.json"`,
           `git checkout master`,
-          `git pull`,
           `( git branch -D -f master_copy_npp_tool &> /dev/null || echo "" ) `,
           `git checkout -b master_copy_npp_tool`,
           `git merge --no-commit -m "This release branch should be merged into master and integration." "${releaseName}"`,
@@ -459,7 +465,7 @@ async.autoInject({
         .join(' && ');
 
         k.stdin.end(cmd);
-        k.stderr.pipe(process.stderr);
+        k.stderr.pipe(pt(chalk.yellow.bold(`${v.name}: `))).pipe(process.stderr);
 
         k.once('exit', code => {
 
