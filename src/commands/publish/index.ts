@@ -98,16 +98,18 @@ async.autoInject({
 
       Object.keys(clonedMap).forEach(k => {
 
-
         const value  = clonedMap[k];
 
         if(!value.vcs){
-          log.error('We need to know what vcs you are using in project:', value.path);
-          log.error('Please add vcs information to the .npp.json files:', path.resolve(value.path + '/.npp.json'));
+          console.error();
+          log.error('We need to know what vcs you are using in project:', chalk.blueBright(value.path));
+          log.error('Please add vcs information to the .npp.json file here:', chalk.blueBright(path.resolve(value.path + '/.npp.json')));
+          log.error('To see the structure of a valid .npp.json file and the vcs property, see: https://github.com/ORESoftware/npp/blob/master/src/index.ts');
           process.exit(1);
         }
 
         if(value.vcs.type !== 'git'){
+          console.error();
           log.error('Currenly NPP only supports Git, as far as version control. The following package declared a VCS other than git:', value.path);
           log.error('If this was a mistake, you can update your .npp.json file here:', path.resolve(value.path + '/.npp.json'));
           process.exit(1);
@@ -121,7 +123,6 @@ async.autoInject({
         if (!value.workingDirectoryClean) {
           allClean = false;
         }
-
 
 
         table.push(viewTable.map(v => (value as any)[v.value]));
@@ -320,7 +321,9 @@ async.autoInject({
 
     startPublish(areYouReadyToPublish: any, choosePublishingOrder: Array<SearchResult>, cb: EVCb<any>) {
 
-      async.eachLimit(choosePublishingOrder.slice(0), 1, (v, cb) => {
+      const publishArray = choosePublishingOrder.slice(0);
+
+      async.mapLimit(publishArray, 1, (v, cb) => {
 
           const k = cp.spawn('bash');
 
@@ -341,9 +344,11 @@ async.autoInject({
             return cb(err);
           }
 
+          const releaseName = v.releaseBranchName = `${process.env.USER}/release/${Date.now()}`;
+
           const cmd = [
             `cd ${v.path}`,
-
+            `git checkout -b "${releaseName}"` //  `git checkout "${releaseName}" HEAD`,
           ]
           .join(' && ');
 
@@ -351,22 +356,61 @@ async.autoInject({
 
           k.once('exit', code => {
 
-            let err = code < 1 ? null : {
-              'message': 'Could not run command in package root.',
-              cmd,
-              code,
-              path: v.path,
-              package: v.name
-            };
+            if(code > 0){
+              return cb({
+                'message': 'Could not run command in package root / could not checkout release branch from the current branch.',
+                cmd,
+                code,
+                path: v.path,
+                package: v.name
+              });
+            }
 
-            cb(err);
+            cb(null, v);
 
           });
-
         },
-        cb);
+       cb);
 
-    }
+    },
+
+     modifyReleaseBranches(startPublish: Array<any>, cb: EVCb<any>){
+
+      async.eachLimit(startPublish, 1, (v, cb) => {
+
+        const releaseName = v.releaseBranchName;
+        const k = cp.spawn('bash');
+
+        const cmd = [
+          `git checkout master`,
+          `git pull`,
+          `git branch -D -f master_copy_npp_tool || echo "Could not delete branch named 'master_copy_npp_tool'"`,
+          `git checkout -b master_copy_npp_tool`,
+          `git merge --no-commit -m "dummy_message" "${releaseName}"`,
+          `git checkout ${releaseName}`,
+          `git push -u origin ${releaseName}`
+        ]
+        .join(' && ');
+
+      });
+
+     },
+
+     mergeReleaseBranches(startPublish: any, cb: EVCb<any>){
+
+      // the user must merge the release branches into master, before we actually publish to NPM
+       const prompt = rl.createInterface({
+         input: process.stdin,
+         output: process.stdout
+       });
+
+      prompt.question('Your release branches have all been created at the above locations. ' +
+        'Please merge them all into their respective master branches. That might take you some time, that is OK. To contine hit return.', (answer) => {
+        prompt.close();
+        cb(null);
+      });
+
+     }
 
   },
 

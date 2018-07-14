@@ -1,7 +1,12 @@
 {
-  "vcs": "git",
-  "branch": "master",
-  "remoteTrackingBranch": "origin/master",
+  "vcs": {
+    "type":"git",
+    "value":{
+      "checkoutReleaseBranch": "echo '123 checking out release branch...'",
+      "pushToRemote": "git push"
+    }
+  },
+
   "searchRoots": [
     "/home/oleg/WebstormProjects/oresoftware/r2g",
     "/home/oleg/WebstormProjects/oresoftware/sumanjs/suman",
@@ -13,7 +18,5 @@
     "suman": true,
     "suman-types": true,
     "suman-watch": true
-  },
-  "checkoutReleaseBranch": "echo '123 checking out release branch...'",
-  "pushToRemote": "echo '456 pushing to remote...'"
+  }
 }

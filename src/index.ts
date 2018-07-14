@@ -12,6 +12,7 @@ export const r2gSmokeTest = function () {
 export interface VCSType {
   type: 'git' | 'svn' | 'hg',
   value: {
+    remote: string
     master: string
     integration: string  | null
   }

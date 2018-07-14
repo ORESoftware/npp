@@ -31,7 +31,8 @@ export interface SearchResult {
   workingDirectoryClean: boolean,
   packageJSON: any,
   vcs: VCSType,
-  validNPPJSON: boolean
+  validNPPJSON: boolean,
+  releaseBranchName?: string
 }
 
 export interface SearchResultMap {
