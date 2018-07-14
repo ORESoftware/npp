@@ -8,7 +8,8 @@ import * as util from "util";
 import chalk from "chalk";
 import {BranchNameData, getCurrentBranchName, getStatus, GitStatusData} from "./git-helpers";
 import {getLatestVersionFromNPMRegistry, RegistryData} from "./npm-helpers";
-import {EVCb, NppJSONConf} from "./index";
+import {EVCb, NppJSONConf, VCSType} from "./index";
+import {flattenDeep} from "./utils";
 
 export interface Packages {
   [key: string]: boolean | string
@@ -21,14 +22,15 @@ export enum GitStatus {
 }
 
 export interface SearchResult {
-  branch: string,
+  currentBranch: string,
   localVersion: string,
-  npmVersion: string,
+  npmRegistryVersion: string,
   name: string,
   path: string,
   upToDateWithRemote: boolean,
   workingDirectoryClean: boolean,
-  packageJSON: any
+  packageJSON: any,
+  vcs: VCSType
 }
 
 export interface SearchResultMap {
@@ -248,8 +250,13 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
             }
 
             if (npp && npp.searchRoots) {
-              try {
-                npp.searchRoots.forEach(v => {
+                flattenDeep([npp.searchRoots]).forEach(v => {
+
+                  if(typeof v !== 'string'){
+                    log.warn('Search-root was not a string:', v);
+                    return
+                  }
+
                   if (isSearchable(v)) {
                     log.info('adding this to the search queue:', v);
                     q.push(function (cb: EVCb<any>) {
@@ -258,11 +265,6 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                     });
                   }
                 });
-              }
-              catch (err) {
-                log.error(err);
-                return cb(new Error('npp.searchRoots was problematic (probably not an array), at path: ' + chalk.magenta(nppPath)));
-              }
             }
 
             async.autoInject({
@@ -297,12 +299,13 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                 map[name] = {
                   name,
                   localVersion: version,
-                  npmVersion: results.getLatestVersionFromNPMRegistry.npmVersion,
-                  branch: results.getBranchName.branchName,
+                  npmRegistryVersion: results.getLatestVersionFromNPMRegistry.npmVersion,
+                  currentBranch: results.getBranchName.branchName,
                   workingDirectoryClean: results.checkGitStatus.workingDirectoryClean,
                   upToDateWithRemote: results.checkGitStatus.upToDateWithRemote,
                   path: dir,
                   packageJSON: parsedPkgJSON,
+                  vcs: npp && npp.vcs || null
                 };
 
                 cb(null);

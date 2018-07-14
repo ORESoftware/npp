@@ -3,12 +3,13 @@
 import log from '../../logger';
 import chalk from 'chalk';
 import residence = require('residence');
-import {getFSMap} from "../../find-projects";
+import {getFSMap, SearchResultMap} from "../../find-projects";
 import async = require('async');
 import {mapPaths} from "../../map-paths";
 import {EVCb} from "../../index";
 import options, {ViewOpts} from './cli-opts';
 import * as path from "path";
+import {viewTable} from "../../tables";
 const dashdash = require('dashdash');
 
 log.info(chalk.blueBright(
@@ -45,12 +46,10 @@ if (opts.help) {
 const Table = require('cli-table');
 const table = new Table({
   // colWidths: [200, 100, 100, 100, 100, 100, 100],
-  head: ['Name', 'Local Version', 'NPM Registry Version', 'Current Branch', 'Clean?', 'Up-to-Date?', 'Path']
+  head: viewTable.map(v => v.header)
 });
 
-const flattenDeep = function (a: Array<any>): Array<any> {
-  return a.reduce((acc, val) => Array.isArray(val) ? acc.concat(flattenDeep(val)) : acc.concat(val), []);
-};
+
 
 const cwd = process.cwd();
 const projectRoot = residence.findProjectRoot(cwd);
@@ -90,12 +89,12 @@ async.autoInject({
       throw err;
     }
 
-    const map = results.getMap;
+    const map = results.getMap as SearchResultMap;
 
     Object.keys(map).forEach(k => {
 
-      const v = map[k];
-      table.push(Object.values(v));
+      const value : any = map[k];
+      table.push(viewTable.map(v => value[v.value]));
 
     });
 

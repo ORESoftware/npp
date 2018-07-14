@@ -28,7 +28,6 @@ export const mapPaths = (searchRoots: Array<string>, cb: Function) => {
 
   k.once('error', (e) => {
     log.error(e.stack || e);
-    cb(e);
   });
 
   k.once('exit', code => {

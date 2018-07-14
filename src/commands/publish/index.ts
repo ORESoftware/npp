@@ -15,6 +15,7 @@ import * as semver from 'semver';
 const inquirer = require('inquirer');
 import * as cp from 'child_process';
 import * as assert from "assert";
+import {viewTable} from "../../tables";
 
 log.info(chalk.blueBright(
   'running publish'
@@ -96,14 +97,15 @@ async.autoInject({
       let allUpToDateWithRemote = true;
 
       Object.keys(clonedMap).forEach(k => {
-        const v = clonedMap[k];
-        if (!v.upToDateWithRemote) {
+        const value : any = clonedMap[k];
+        if (!value.upToDateWithRemote) {
           allUpToDateWithRemote = false;
         }
-        if (!v.workingDirectoryClean) {
+        if (!value.workingDirectoryClean) {
           allClean = false;
         }
-        table.push(Object.values(v));
+        // table.push(Object.values(v));
+        table.push(viewTable.map(v => value[v.value]));
       });
 
       const str = table.toString().split('\n').map((v: string) => '  ' + v).join('\n');
@@ -297,7 +299,7 @@ async.autoInject({
 
     },
 
-    runPublish(areYouReadyToPublish: any, choosePublishingOrder: Array<SearchResult>, cb: EVCb<any>) {
+    startPublish(areYouReadyToPublish: any, choosePublishingOrder: Array<SearchResult>, cb: EVCb<any>) {
 
       async.eachLimit(choosePublishingOrder.slice(0), 1, (v, cb) => {
 
@@ -322,7 +324,6 @@ async.autoInject({
 
           const cmd = [
             `cd ${v.path}`,
-            ``
 
           ]
           .join(' && ');
