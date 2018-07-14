@@ -70,7 +70,7 @@ catch (err) {
 
 const searchRoots = primaryNPPFile.searchRoots;
 const packages = primaryNPPFile.packages;
-
+const promptColorFn = chalk.bgBlueBright.whiteBright.bold;
 
 async.autoInject({
 
@@ -90,8 +90,17 @@ async.autoInject({
         return process.nextTick(cb, chalk.magenta("No relevant projects/packages were found on your fs, here were your original searchRoots: ") + chalk.magentaBright(searchRoots));
       }
 
+      let allClean = true;
+      let allUpToDateWithRemote = true;
+
       Object.keys(clonedMap).forEach(k => {
         const v = clonedMap[k];
+        if(!v.upToDateWithRemote){
+           allUpToDateWithRemote = false;
+        }
+        if(!v.workingDirectoryClean){
+          allClean = false;
+        }
         table.push(Object.values(v));
       });
 
@@ -99,12 +108,22 @@ async.autoInject({
       console.log(str);
       console.log();
 
+      if(!allClean){
+        log.warn('Note that at least one package has working changes that have not been committed.');
+      }
+
+      if(!allUpToDateWithRemote){
+        log.warn('Note that at least one package has commits that have not made it to the remote.');
+      }
+
+      console.log();
+
       const prompt = rl.createInterface({
         input: process.stdin,
         output: process.stdout
       });
 
-      prompt.question(chalk.bold.bgBlueBright.whiteBright(' => Given the above table, are these the packages you wish to publish? (y/n) ') + ' ', (answer) => {
+      prompt.question(promptColorFn(' => Given the above table, are these the packages you wish to publish? (y/n) ') + ' ', (answer) => {
 
         prompt.close();
 
@@ -185,7 +204,7 @@ async.autoInject({
         });
 
         console.log();
-        prompt.question(chalk.bgBlueBright.whiteBright(' => Given the above version info, what version would you like to bump the projects/packages to? ') + ' ', (answer) => {
+        prompt.question(promptColorFn(' => Given the above version info, what version would you like to bump the projects/packages to? ') + ' ', (answer) => {
 
           prompt.close();
 
@@ -224,7 +243,7 @@ async.autoInject({
           {
             type: 'list',
             name: 'nextPackage',
-            message: 'Choose the publishing order. Which package would you like to publish first/next?',
+            message: promptColorFn(' => Choose the publishing order. Which package would you like to publish first/next? '),
             choices: keys
           }
         ])
@@ -262,7 +281,7 @@ async.autoInject({
         output: process.stdout
       });
 
-      prompt.question(chalk.bgBlueBright.whiteBright(' Are you ready to publish? ') + ' ', answer => {
+      prompt.question(promptColorFn(' => Are you ready to publish? (y/n) ') + ' ', answer => {
 
         prompt.close();
 
@@ -270,7 +289,8 @@ async.autoInject({
           return cb(null);
         }
 
-        log.info('Too bad things didnt work out, better luck next time.');
+        log.info(chalk.yellow('You need to use a phrase that starts with y/Y to contine on.'));
+        log.info(chalk.yellow('Too bad things didnt work out, better luck next time.'));
         process.exit(1);
 
       });

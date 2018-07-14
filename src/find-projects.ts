@@ -298,8 +298,8 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                   localVersion: version,
                   npmVersion: results.getLatestVersionFromNPMRegistry.npmVersion,
                   branch: results.getBranchName.branchName,
-                  upToDateWithRemote: results.checkGitStatus.upToDateWithRemote,
                   workingDirectoryClean: results.checkGitStatus.workingDirectoryClean,
+                  upToDateWithRemote: results.checkGitStatus.upToDateWithRemote,
                   path: dir,
                 };
 

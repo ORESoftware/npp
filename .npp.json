@@ -13,5 +13,7 @@
     "suman": true,
     "suman-types": true,
     "suman-watch": true
-  }
+  },
+  "checkoutReleaseBranch": "",
+  "pushToRemote": ""
 }
