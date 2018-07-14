@@ -50,6 +50,9 @@ if (opts.help) {
   process.exit(0);
 }
 
+// so we know we are publishing, not just viewing
+opts.isPublish = true;
+
 const viewTable = getViewTable(opts);
 
 import Table = require('cli-table');
@@ -349,6 +352,7 @@ async.autoInject({
 
           const cmd = [
             `cd ${v.path}`,
+            `git checkout master`,  // checkout the integration branch first
             `git checkout -b "${releaseName}"` //  `git checkout "${releaseName}" HEAD`,
           ]
           .join(' && ');
@@ -412,7 +416,7 @@ async.autoInject({
 
                 if (err) {
                   log.error('Could not write to this path:', pkgJSONPath);
-                  log.error('The data we were trying to write to the oath was:', stringified);
+                  log.error('The data we were trying to write to the path was:', stringified);
                   return cb(err);
                 }
 

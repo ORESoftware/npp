@@ -277,7 +277,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
 
                 getLatestVersionFromNPMRegistry(cb: EVCb<RegistryData>) {
 
-                  if (!opts.view_npm_registry) {
+                  if (!opts.isPublish && !opts.view_npm_registry) {
                     return process.nextTick(cb, null, <RegistryData> {
                       exitCode: null,
                       npmVersion: ''
