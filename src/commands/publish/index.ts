@@ -71,10 +71,6 @@ catch (err) {
 const searchRoots = primaryNPPFile.searchRoots;
 const packages = primaryNPPFile.packages;
 
-const prompt = rl.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
 
 async.autoInject({
 
@@ -103,10 +99,16 @@ async.autoInject({
       console.log(str);
       console.log();
 
-      const acceptableAnswers = ['yeah', 'jeah', 'y', 'yes', 'you betcha', 'ya'];
-      prompt.question(chalk.bold.blueBright(' => Given the above table, are these the packages you wish to publish? (y/n) '), (answer) => {
+      const prompt = rl.createInterface({
+        input: process.stdin,
+        output: process.stdout
+      });
 
-        if (acceptableAnswers.includes(String(answer || '').trim().toLowerCase())) {
+      prompt.question(chalk.bold.bgBlueBright.whiteBright(' => Given the above table, are these the packages you wish to publish? (y/n) ') + ' ', (answer) => {
+
+        prompt.close();
+
+        if ((String(answer || '').trim().toLowerCase().startsWith('y'))) {
           console.log();
           log.info('Ok, we are going to choose a version next.');
           console.log();
@@ -173,10 +175,19 @@ async.autoInject({
         );
       });
 
+
+
       (function runPrompt() {
 
+        const prompt = rl.createInterface({
+          input: process.stdin,
+          output: process.stdout
+        });
+
         console.log();
-        prompt.question(chalk.bold.blueBright(' => Given the version info, what version would you like to bump the projects to? '), (answer) => {
+        prompt.question(chalk.bgBlueBright.whiteBright(' => Given the above version info, what version would you like to bump the projects/packages to? ') + ' ', (answer) => {
+
+          prompt.close();
 
           try {
 
@@ -202,7 +213,7 @@ async.autoInject({
 
     },
 
-    choosePublishingOrder(chooseNewVersion: string, confirmProjects: SearchResultMap, cb: EVCb<any>) {
+    choosePublishingOrder(chooseNewVersion: string, confirmProjects: SearchResultMap, cb: EVCb<Array<SearchResult>>) {
 
       const keys = Object.keys(confirmProjects);
       const list: Array<SearchResult> = [];
@@ -233,12 +244,36 @@ async.autoInject({
           list.push(confirmProjects[keys[0]]); // there is one remaining
           console.log();
           log.info(chalk.blueBright('Your packages will be published in the following order:'));
-          list.map(v => v.name).forEach((v, i) => log.info(chalk.bold(String(i + 1)), chalk.bgBlueBright(v)));
+          list.map(v => v.name).forEach((v, i) => log.info(chalk.bold(String(i + 1)), chalk.cyan.bold(v)));
           cb(null, list);
 
         });
 
       })();
+
+    },
+
+    areYouReadyToPublish(choosePublishingOrder: Array<SearchResult>, cb: EVCb<any>){
+
+      console.log();
+
+      const prompt = rl.createInterface({
+        input: process.stdin,
+        output: process.stdout
+      });
+
+      prompt.question(chalk.bgBlueBright.whiteBright(' Are you ready to publish? ') + ' ', answer => {
+
+        prompt.close();
+
+        if ((String(answer || '').trim().toLowerCase().startsWith('y'))) {
+          return cb(null);
+        }
+
+        log.info('Too bad things didnt work out, better luck next time.');
+        process.exit(1);
+
+      });
 
     }
 
@@ -247,10 +282,16 @@ async.autoInject({
   (err, results) => {
 
     if (err) {
-      throw err;
+      console.error();
+      log.error(err);
+      console.error();
+      process.exit(1);
     }
 
-    log.info('All done, success.');
+    console.log();
+    log.info(chalk.green.bold('All done, success.'));
+    console.log();
+    process.exit(0);
 
   });
 
