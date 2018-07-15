@@ -7,6 +7,12 @@
 >
 
 
+### Caveats / Disclaimer
+
+* Currently only works with Git
+* You need Git version > 2.7.0 on your local machine
+
+
 ## Quick reference
 
 >

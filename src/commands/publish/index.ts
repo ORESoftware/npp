@@ -511,7 +511,7 @@ async.autoInject({
 
     },
 
-    modifyReleaseBranches(startPublish: Array<SearchResult>, cb: EVCb<Array<ReleaseInfo>>) {
+    modifyReleaseBranches(startPublish: Array<SearchResult>,chooseNewVersion: string, cb: EVCb<Array<ReleaseInfo>>) {
 
       async.mapLimit(startPublish, 1, (v, cb) => {
 
@@ -527,16 +527,17 @@ async.autoInject({
           `git add .`,
           `git commit -am "modified package.json"`,
           `git checkout master`,
-          `( git branch -D -f master_copy_npp_tool &> /dev/null || echo "" ) `,
+          `( git branch -D -f master_copy_npp_tool &> /dev/null || echo "" )`,
           `git checkout -b master_copy_npp_tool`,
           `git merge --no-commit -m "This release branch should be merged into master and integration." "${releaseName}"`,
           `git checkout ${releaseName}`,
-          `git push -u origin ${releaseName}`
+          // `git tag ${chooseNewVersion}`,
+          `git push --follow-tags -u origin ${releaseName}`
         ]
         .join(' && ');
 
         // always checkout the integration branch again, at the end
-        const cmd = `cd ${v.path} && ( ${subshell} ) || { echo "Command failed"; } && git checkout -f master;`;
+        const cmd = `cd ${v.path} && ( ${subshell} ) || { echo "Command failed"; git checkout -f master; exit 1; } && git checkout -f master;`;
 
         k.stdin.end(cmd);
         k.stderr.pipe(pt(chalk.yellow.bold(`[${v.name}]: `))).pipe(process.stderr);

@@ -122,3 +122,46 @@ export const getCurrentBranchName = function (dir: string, remote: string, cb: E
   })
 
 };
+
+export interface GitRemoteData {
+  exitCode: number,
+  gitRemoteURL: string
+}
+
+
+export const getRemoteURL = function (dir: string, remote: string, cb: EVCb<GitRemoteData>) {
+
+  const k = cp.spawn('bash', [], {
+    cwd: dir
+  });
+
+  const cmd = `git remote get-url origin`;
+  k.stdin.end(cmd);
+
+  const result = {
+    exitCode: null as number,
+    gitRemoteURL: ''
+  };
+
+  k.stderr.setEncoding('utf8');
+  k.stderr.pipe(process.stderr);
+
+  k.stdout.on('data', d => {
+    result.gitRemoteURL = result.gitRemoteURL += String(d || '').trim();
+  });
+
+  k.once('exit', code => {
+
+    result.exitCode = code;
+
+    let err = null;
+
+    if(code > 0){
+      err = {code, message: `Could not run the following command: ${chalk.bold(cmd)}`};
+    }
+
+    cb(err, result);
+
+  });
+
+};

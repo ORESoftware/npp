@@ -1,4 +1,4 @@
-
+import chalk from "chalk";
 
 export const getViewTable = function(opts: any){
 
@@ -54,6 +54,11 @@ export const getViewTable = function(opts: any){
       return opts[v] === true;
     });
 
+  })
+  .map(v => {
+
+    v.header = chalk.blue(v.header);
+    return v;
   });
 
 
