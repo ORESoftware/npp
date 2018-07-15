@@ -9,20 +9,20 @@ export const r2gSmokeTest = function () {
 };
 
 
-export interface VCSType {
-  type: 'git' | 'svn' | 'hg',
-  value: {
-    remote: string
-    master: string
-    integration: string  | null
-  }
-}
-
 export interface NppJSONConf {
-  searchRoots: Array<string>,
-  vcs: VCSType,
-  packages: {[key: string]: boolean}
+  vcsType: 'svn' | 'git' | 'hg',
+  vcsInfo: {
+    remote: string,
+    master: string,
+    integration: string
+  },
+  searchRoots?: Array<string>,
+  packages?: {[key: string]: boolean}
 }
 
 
+export interface NppJSONRootConf {
+  searchRoots: Array<string>
+  packages: {[key:string]: any}
+}
 

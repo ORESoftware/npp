@@ -3,6 +3,7 @@
 import * as cp from 'child_process';
 import log from './logger';
 import {EVCb} from "./index";
+import chalk from "chalk";
 
 ////////////////////////////////////////////////////////////////
 
@@ -17,7 +18,8 @@ export const getLatestVersionFromNPMRegistry = function (dir: string, name: stri
     cwd: dir
   });
 
-  k.stdin.end(`npm view ${name}@latest version;`);
+  const cmd = `npm view ${name}@latest version;`;
+  k.stdin.end(cmd);
 
   const result = {
     exitCode: null as number,
@@ -33,7 +35,13 @@ export const getLatestVersionFromNPMRegistry = function (dir: string, name: stri
 
   k.once('exit', code => {
     result.exitCode = code;
-    cb(code, result);
-  })
+
+    let err = null;
+    if (code > 0) {
+      err = {code, message: `Could not run the following command: "${chalk.bold(cmd)}".`}
+    }
+
+    cb(err, result);
+  });
 
 };

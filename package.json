@@ -29,6 +29,7 @@
   },
   "homepage": "https://github.com/ORESoftware/npp#readme",
   "dependencies": {
+    "ajv": "^6.5.1",
     "async": "^2.6.1",
     "chalk": "^2.4.1",
     "cli-table": "^0.3.1",

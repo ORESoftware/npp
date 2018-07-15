@@ -1,0 +1,41 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+        "packages": {
+            "additionalProperties": {
+                "type": "boolean"
+            },
+            "type": "object"
+        },
+        "searchRoots": {
+            "items": {
+                "type": "string"
+            },
+            "type": "array"
+        },
+        "vcsInfo": {
+            "properties": {
+                "integration": {
+                    "type": "string"
+                },
+                "master": {
+                    "type": "string"
+                },
+                "remote": {
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "vcsType": {
+            "enum": [
+                "git",
+                "hg",
+                "svn"
+            ],
+            "type": "string"
+        }
+    },
+    "type": "object"
+}
+

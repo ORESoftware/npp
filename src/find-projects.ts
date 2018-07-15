@@ -8,7 +8,7 @@ import * as util from "util";
 import chalk from "chalk";
 import {BranchNameData, getCurrentBranchName, getStatus, GitStatusData} from "./git-helpers";
 import {getLatestVersionFromNPMRegistry, RegistryData} from "./npm-helpers";
-import {EVCb, NppJSONConf, VCSType} from "./index";
+import {EVCb, NppJSONConf} from "./index";
 import {flattenDeep} from "./utils";
 import {mapPaths} from "./map-paths";
 
@@ -31,8 +31,7 @@ export interface SearchResult {
   upToDateWithRemote: boolean,
   workingDirectoryClean: boolean,
   packageJSON: any,
-  vcs: VCSType,
-  validNPPJSON: boolean,
+  nppJSON: NppJSONConf,
   releaseBranchName?: string
 }
 
@@ -199,7 +198,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
               return cb(err);
             }
 
-            let parsedPkgJSON : any = null;
+            let parsedPkgJSON: any = null;
 
             try {
               parsedPkgJSON = JSON.parse(String(results.readPackageJSON));
@@ -257,20 +256,20 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
 
             if (npp && npp.searchRoots) {
 
-                const filtered = flattenDeep([npp.searchRoots]).map(v => String(v || '').trim()).filter(Boolean);
-                mapPaths(filtered, (err, results) => {
+              const filtered = flattenDeep([npp.searchRoots]).map(v => String(v || '').trim()).filter(Boolean);
+              mapPaths(filtered, (err, results) => {
 
-                  results.forEach(v => {
-                    if (isSearchable(v)) {
-                      log.info('adding this to the search queue:', v);
-                      q.push(function (cb: EVCb<any>) {
-                        log.info('Now searching path:', v);
-                        searchDir(v, cb);
-                      });
-                    }
-                  });
-
+                results.forEach(v => {
+                  if (isSearchable(v)) {
+                    log.info('adding this to the search queue:', v);
+                    q.push(function (cb: EVCb<any>) {
+                      log.info('Now searching path:', v);
+                      searchDir(v, cb);
+                    });
+                  }
                 });
+
+              });
             }
 
             async.autoInject({
@@ -299,6 +298,11 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
 
               (err, results) => {
 
+                if (err) {
+                  log.error(err);
+                  process.exit(1);
+                }
+
                 log.info('added the following package name to the map:', name);
 
                 map[name] = {
@@ -310,8 +314,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                   upToDateWithRemote: results.checkGitStatus.upToDateWithRemote,
                   path: dir,
                   packageJSON: parsedPkgJSON,
-                  vcs: npp && npp.vcs || null,
-                  validNPPJSON: true
+                  nppJSON: npp || null,
                 };
 
                 cb(null);

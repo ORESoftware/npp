@@ -3,6 +3,7 @@
 import * as cp from 'child_process';
 import log from './logger';
 import {EVCb} from "./index";
+import chalk from "chalk";
 
 ////////////////////////////////////////////////////////////////
 
@@ -33,7 +34,9 @@ export const getStatus = function (dir: string, remote: string, cb: EVCb<GitStat
     stdout += String(d || '').trim();
   });
 
-  k.stdin.end(`git status;`);
+  const cmd = `git status;`
+
+  k.stdin.end(cmd);
 
   k.once('exit', code => {
 
@@ -51,7 +54,13 @@ export const getStatus = function (dir: string, remote: string, cb: EVCb<GitStat
       result.workingDirectoryClean = true;
     }
 
-    cb(code, result);
+    let err = null;
+
+    if(code > 0){
+      err = {code, message: `Could not run the following command: ${chalk.bold(cmd)}`};
+    }
+
+    cb(err, result);
 
   });
 
@@ -68,7 +77,8 @@ export const getCurrentBranchName = function (dir: string, remote: string, cb: E
     cwd: dir
   });
 
-  k.stdin.end(`git rev-parse --abbrev-ref HEAD;`);
+  const cmd = `git rev-parse --abbrev-ref HEAD;`;
+  k.stdin.end(cmd);
 
   const result = {
     exitCode: null as number,
@@ -84,7 +94,14 @@ export const getCurrentBranchName = function (dir: string, remote: string, cb: E
 
   k.once('exit', code => {
     result.exitCode = code;
-    cb(code, result);
+
+    let err = null;
+
+    if(code > 0){
+      err = {code, message: `Could not run the following command: ${chalk.bold(cmd)}`};
+    }
+
+    cb(err, result);
   })
 
 };

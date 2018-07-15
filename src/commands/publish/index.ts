@@ -18,10 +18,16 @@ import * as assert from "assert";
 import * as fs from 'fs';
 import {getViewTable} from "../../tables";
 import pt from 'prepend-transform';
+import Ajv = require('ajv');
+const nppRootSchema = require('../../../assets/schema/npp.root.json');
+const nppSchema = require('../../../assets/schema/npp.json');
+
 
 log.info(chalk.blueBright(
   'running publish'
 ));
+
+
 
 process.once('exit', code => {
   console.log();
@@ -76,6 +82,25 @@ catch (err) {
   throw err.message;
 }
 
+{
+  const ajv = new Ajv({allErrors: false}); // options can be passed, e.g. {allErrors: true}
+  const validate = ajv.compile(nppRootSchema);
+  try {
+    const valid = validate(rootNPPFile);
+    if (!valid) {
+      throw validate.errors;
+    }
+  }
+  catch (err) {
+    log.error(err.message);
+    log.error('Your .npp.root.json file is not valid - it does not match the validation schema.');
+    log.error('Your .npp.root.json is as follows:', rootNPPFile);
+    log.error('And the schema is like so:', nppRootSchema);
+    process.exit(1);
+  }
+}
+
+
 const searchRoots = rootNPPFile.searchRoots;
 const packages = rootNPPFile.packages;
 const promptColorFn = chalk.bgBlueBright.whiteBright.bold;
@@ -101,11 +126,14 @@ async.autoInject({
       let allClean = true;
       let allUpToDateWithRemote = true;
 
+      const ajv = new Ajv({allErrors: false}); // options can be passed, e.g. {allErrors: true}
+      const validate = ajv.compile(nppSchema);
+
       Object.keys(clonedMap).forEach(k => {
 
         const value = clonedMap[k];
 
-        if (!value.vcs) {
+        if (!value.nppJSON) {
           console.error();
           log.error('We need to know what vcs you are using in project:', chalk.blueBright(value.path));
           log.error('Please add vcs information to the .npp.json file here:', chalk.blueBright(path.resolve(value.path + '/.npp.json')));
@@ -113,7 +141,22 @@ async.autoInject({
           process.exit(1);
         }
 
-        if (value.vcs.type !== 'git') {
+
+        try {
+          const valid = validate(value.nppJSON);
+          if (!valid) {
+            throw validate.errors;
+          }
+        }
+        catch (err) {
+          log.error(err.message);
+          log.error('Your .npp.root.json file is not valid - it does not match the validation schema.');
+          log.error('Your .npp.json is as follows:', value.nppJSON);
+          log.error('And the schema is like so:', nppSchema);
+          process.exit(1);
+        }
+
+        if (value.nppJSON.vcsType !== 'git') {
           console.error();
           log.error('Currenly NPP only supports Git, as far as version control. The following package declared a VCS other than git:', value.path);
           log.error('If this was a mistake, you can update your .npp.json file here:', path.resolve(value.path + '/.npp.json'));

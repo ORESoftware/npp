@@ -41,7 +41,8 @@ export interface PublishOpts {
   help: boolean,
   verbosity: number,
   allow_unknown: boolean,
-  release: string
+  release: string,
+  isPublish?: boolean
 }
 
 export default options;
