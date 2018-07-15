@@ -8,6 +8,11 @@ const options =  [
     help: 'Print this help and exit.'
   },
   {
+    names: ['force', 'f'],
+    type: 'bool',
+    help: 'Print this help and exit.'
+  },
+  {
     names: ['verbosity', 'v'],
     type: 'integer',
     help: 'Verbosity level, 1-3 inclusive.'
@@ -38,6 +43,7 @@ const options =  [
 
 
 export interface PublishOpts {
+  force:boolean,
   help: boolean,
   verbosity: number,
   allow_unknown: boolean,

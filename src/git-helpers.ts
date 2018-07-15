@@ -34,24 +34,40 @@ export const getStatus = function (dir: string, remote: string, cb: EVCb<GitStat
     stdout += String(d || '').trim();
   });
 
-  const cmd = `git status;`
+  k.stderr.on('data', d => {
+    stdout += String(d || '').trim();
+  });
+
+  const cmd = `git status -v`;
 
   k.stdin.end(cmd);
 
   k.once('exit', code => {
 
     if (code > 0) {
-      log.error('Could not run "git status" at path:', dir);
+      log.error(`Could not run "${cmd}" at path:`, dir);
     }
+
+    stdout = String(stdout).trim();
 
     result.exitCode = code;
 
     if (stdout.match(/Your branch is up-to-date with/i)) {
+      log.debug('Branch is up to date with remote:', dir);
       result.upToDateWithRemote = true;
+    }
+    else{
+      log.debug('Branch at path is not up to date:', dir);
+      log.debug('Stdout:', stdout);
     }
 
     if (stdout.match(/nothing to commit, working directory clean/i)) {
+      log.debug('Working directory clean:', dir);
       result.workingDirectoryClean = true;
+    }
+    else{
+      log.debug('Working directory is not clean:', dir);
+      log.debug('Stdout:', stdout);
     }
 
     let err = null;
@@ -77,7 +93,7 @@ export const getCurrentBranchName = function (dir: string, remote: string, cb: E
     cwd: dir
   });
 
-  const cmd = `git rev-parse --abbrev-ref HEAD;`;
+  const cmd = `git rev-parse --abbrev-ref HEAD`;
   k.stdin.end(cmd);
 
   const result = {
@@ -93,6 +109,7 @@ export const getCurrentBranchName = function (dir: string, remote: string, cb: E
   });
 
   k.once('exit', code => {
+
     result.exitCode = code;
 
     let err = null;

@@ -181,7 +181,7 @@ async.autoInject({
 
         table.push(viewTable.map(v => {
 
-          if(!(v.value in value){
+          if(!(v.value in value)){
             log.debug('map value does not have this property:', v.value);
             log.debug('The map looks like:', value);
           }
@@ -197,13 +197,17 @@ async.autoInject({
 
       if(errors.length){
         errors.forEach(v => log.error(v));
-        console.log('\n', chalk.bgRedBright.bold.whiteBright(' => Please resolve these problems and then retry publishing.'),'\n');
-        process.exit(1);
+        if(!opts.force){
+          console.log('\n', chalk.bgRedBright.bold.whiteBright(' => Please resolve these problems and then retry publishing.'),'\n');
+          process.exit(1);
+        }
       }
 
       if (!allClean) {
         log.warn('Note that at least one package has working changes that have not been committed.');
-        process.exit(1);
+        if(!opts.force){
+          process.exit(1);
+        }
       }
 
 
@@ -398,7 +402,7 @@ async.autoInject({
 
           const k = cp.spawn('bash');
 
-          log.info('Checking out release branch in path:', v.path);
+          log.debug('Checking out release branch in path:', v.path);
 
           let pck = null, pkgJSONPath = path.resolve(v.path + '/package.json');
 
@@ -444,8 +448,8 @@ async.autoInject({
               });
             }
 
-            log.info('Successfully checked out release branch for path:', v.path);
-            log.info('Now we are modifying the package.json file in that path to reflect the version bump.');
+            log.debug('Successfully checked out release branch for path:', v.path);
+            log.debug('Now we are modifying the package.json file in that path to reflect the version bump.');
 
             fs.readFile(pkgJSONPath, (err, data) => {
 
@@ -516,10 +520,9 @@ async.autoInject({
         const releaseName = v.releaseBranchName;
         const k = cp.spawn('bash');
 
-        log.info('Checking to see if we can merge the release branch into master for path:', v.path);
+        log.debug('Checking to see if we can merge the release branch into master for path:', v.path);
 
-        let cmd = [
-          `cd ${v.path}`,
+        let subshell = [
           `git checkout "${releaseName}"`,
           `git add .`,
           `git commit -am "modified package.json"`,
@@ -532,7 +535,8 @@ async.autoInject({
         ]
         .join(' && ');
 
-        cmd = `( ${cmd} ); git checkout -f master; `;  // always checkout the integration branch again, at the end
+        // always checkout the integration branch again, at the end
+        const cmd = `cd ${v.path} && ( ${subshell} ) || { echo "Command failed"; } && git checkout -f master;`;
 
         k.stdin.end(cmd);
         k.stderr.pipe(pt(chalk.yellow.bold(`[${v.name}]: `))).pipe(process.stderr);
