@@ -57,7 +57,9 @@ const cwd = process.cwd();
 const projectRoot = residence.findProjectRoot(cwd);
 
 if (!projectRoot) {
-  throw 'Could not find project root given current working directory: ' + chalk.blueBright(cwd);
+  log.error( chalk.redBright('Could not find project root given current working directory:') , chalk.blueBright(cwd));
+  log.error(chalk.redBright('NPP looks for your project root based off the nearest package.json file, by walking down the fs tree. You might be missing a package.json file.'));
+  process.exit(1);
 }
 
 let primaryNPPFile = null;
