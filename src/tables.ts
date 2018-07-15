@@ -7,10 +7,10 @@ export const getViewTable = function(opts: any){
       header: 'Name',
       value: 'name'
     },
-    {
-      header: 'Has valid .npp.json?',
-      value: 'validNPPJSON'
-    },
+    // {
+    //   header: 'Has valid .npp.json?',
+    //   value: 'validNPPJSON'
+    // },
     {
       header: 'Local Version',
       value: 'localVersion'

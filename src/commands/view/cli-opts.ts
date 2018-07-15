@@ -42,5 +42,6 @@ export default options;
 export type Opts = typeof options;
 
 export interface ViewOpts {
-  help: boolean
+  help: boolean,
+  isView: boolean
 }

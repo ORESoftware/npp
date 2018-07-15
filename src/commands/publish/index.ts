@@ -63,6 +63,8 @@ opts.isPublish = true;
 const viewTable = getViewTable(opts);
 
 import Table = require('cli-table');
+import {flattenDeep} from "../../utils";
+import * as util from "util";
 const table = new Table({
   // colWidths: [200, 100, 100, 100, 100, 100, 100],
   colors: false,
@@ -78,7 +80,7 @@ try {
   rootNPPFile = require(path.resolve(cwd + '/.npp.root.json'));
 }
 catch (err) {
-  log.error('Could not load your primary project\'s .npp.json file.');
+  log.error('Could not load an .npp.root.json file.');
   throw err.message;
 }
 
@@ -101,7 +103,7 @@ catch (err) {
 }
 
 
-const searchRoots = rootNPPFile.searchRoots;
+const searchRoots = flattenDeep([rootNPPFile.searchRoots]).map(v => String(v || '').trim()).filter(Boolean);
 const packages = rootNPPFile.packages;
 const promptColorFn = chalk.bgBlueBright.whiteBright.bold;
 
@@ -120,7 +122,8 @@ async.autoInject({
       const clonedMap = Object.assign({}, getMap);
 
       if (Object.keys(clonedMap).length < 1) {
-        return process.nextTick(cb, chalk.magenta("No relevant projects/packages were found on your fs, here were your original searchRoots: ") + chalk.magentaBright(searchRoots));
+        return process.nextTick(cb,
+          chalk.magenta("No relevant projects/packages were found on your fs, here were your original searchRoots: ") + chalk.magentaBright(util.inspect(searchRoots)));
       }
 
       let allClean = true;
@@ -128,6 +131,8 @@ async.autoInject({
 
       const ajv = new Ajv({allErrors: false}); // options can be passed, e.g. {allErrors: true}
       const validate = ajv.compile(nppSchema);
+
+      const errors : Array<string> = [];
 
       Object.keys(clonedMap).forEach(k => {
 
@@ -168,19 +173,39 @@ async.autoInject({
         }
 
         if (!value.workingDirectoryClean) {
+          errors.push('Working directory is not clean for package at path: ' + chalk.blueBright(value.path));
           allClean = false;
         }
 
-        table.push(viewTable.map(v => (value as any)[v.value]));
+        // table.push(viewTable.map(v => (value as any)[v.value]));
+
+        table.push(viewTable.map(v => {
+
+          if(!(v.value in value){
+            log.debug('map value does not have this property:', v.value);
+            log.debug('The map looks like:', value);
+          }
+
+          return v.value in value? (value as any)[v.value] : '(missing data)'
+        }));
+
       });
 
       const str = table.toString().split('\n').map((v: string) => '  ' + v).join('\n');
       console.log(str);
       console.log();
 
+      if(errors.length){
+        errors.forEach(v => log.error(v));
+        console.log('\n', chalk.bgRedBright.bold.whiteBright(' => Please resolve these problems and then retry publishing.'),'\n');
+        process.exit(1);
+      }
+
       if (!allClean) {
         log.warn('Note that at least one package has working changes that have not been committed.');
+        process.exit(1);
       }
+
 
       if (!allUpToDateWithRemote) {
         log.warn('Note that at least one package has commits that have not made it to the remote.');
@@ -403,7 +428,7 @@ async.autoInject({
           .join(' && ');
 
 
-          k.stderr.pipe(pt(chalk.yellow.bold(`${v.name}: `))).pipe(process.stderr);
+          k.stderr.pipe(pt(chalk.yellow.bold(`[${v.name}]: `))).pipe(process.stderr);
 
           k.stdin.end(cmd);
 
@@ -493,7 +518,7 @@ async.autoInject({
 
         log.info('Checking to see if we can merge the release branch into master for path:', v.path);
 
-        const cmd = [
+        let cmd = [
           `cd ${v.path}`,
           `git checkout "${releaseName}"`,
           `git add .`,
@@ -507,8 +532,10 @@ async.autoInject({
         ]
         .join(' && ');
 
+        cmd = `( ${cmd} ); git checkout -f master; `;  // always checkout the integration branch again, at the end
+
         k.stdin.end(cmd);
-        k.stderr.pipe(pt(chalk.yellow.bold(`${v.name}: `))).pipe(process.stderr);
+        k.stderr.pipe(pt(chalk.yellow.bold(`[${v.name}]: `))).pipe(process.stderr);
 
         k.once('exit', code => {
 

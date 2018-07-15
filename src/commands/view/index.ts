@@ -42,6 +42,7 @@ if (opts.help) {
   process.exit(0);
 }
 
+opts.isView = true;
 
 const viewTable = getViewTable(opts);
 const Table = require('cli-table');
@@ -95,7 +96,14 @@ async.autoInject({
     Object.keys(map).forEach(k => {
 
       const value : any = map[k];
-      table.push(viewTable.map(v => value[v.value]));
+      table.push(viewTable.map(v => {
+
+        if(!(v.value in value)){
+          log.debug('map value does not have this property:', v.value);
+          log.debug('The map looks like:', value);
+        }
+        return v.value in value? value[v.value] : '(missing data)'
+      }));
 
     });
 
