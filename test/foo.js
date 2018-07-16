@@ -1,10 +1,14 @@
 
 
-const semver = require('semver');
+mandatory = () => {
+  throw new Error('Missing parameter!');
+};
+
+foo = (bar = mandatory()) => {
+  return bar;
+};
 
 
-const v1 = '0.0.0';
-const v2 = '0.0.1';
+console.log(foo(null));
 
-console.log(semver.lt(v1, v2));
-console.log(semver.gt(v2, v1));
+console.log(global.mandatory);
