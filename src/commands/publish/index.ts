@@ -427,7 +427,8 @@ async.autoInject({
           const cmd = [
             `cd ${v.path}`,
             `git fetch origin master`, // fetch the integration branch first
-            `git checkout --no-track -b "${releaseName}" "remotes/origin/master"` //  `git checkout "${releaseName}" HEAD`,
+            `git branch --no-track "${releaseName}" "remotes/origin/master"`, //  `git checkout "${releaseName}" HEAD`,
+            `git checkout "${releaseName}"`
           ]
             .join(' && ');
           
@@ -523,15 +524,17 @@ async.autoInject({
         const tempBranch = `${process.env.USER}/npp_tool/feature/${Date.now()}`;
         const masterCopy = `npp_tool/master_copy`;
         const masterBranch = 'remotes/origin/master';
+        const integrationBranch = 'remotes/origin/master';
         
         let subshell = [
+          `git fetch origin`,
           `git checkout "${releaseName}"`,
           `( git branch -D -f "${tempBranch}" &> /dev/null || echo "" )`,
           `git add .`,
           `git commit -am "NPP tool has modified/updated package.json"`,
-          `git fetch origin`,
           `( git branch -D -f "${masterCopy}" &> /dev/null || echo "" )`,
-          `git checkout --no-track -b "${masterCopy}" "${masterBranch}"`,
+          `git branch --no-track "${masterCopy}" "${masterBranch}"`,
+          `git checkout "${masterCopy}"`,
           `git merge --no-commit -m "Checking to see if release branch can be merged into master." "${releaseName}"`,
           `git checkout ${releaseName} -f`,
           // `git tag ${chooseNewVersion}`,
@@ -539,7 +542,7 @@ async.autoInject({
         ]
           .join(' && ');
         
-        const safeCheckout = ` git checkout -b --no-track "${tempBranch}" "${masterBranch}" `;
+        const safeCheckout = ` git branch --no-track "${tempBranch}" "${integrationBranch}"; git checkout "${tempBranch}" `;
         
         // always checkout the integration branch again, at the end
         const cmd = `cd ${v.path} && ( ${subshell} ) || { echo "Command failed"; ${safeCheckout}; exit 1; } && ${safeCheckout};`;
