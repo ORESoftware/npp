@@ -4,6 +4,7 @@ import * as cp from 'child_process';
 import log from './logger';
 import {EVCb} from "./index";
 import chalk from "chalk";
+import pt from 'prepend-transform';
 
 ////////////////////////////////////////////////////////////////
 
@@ -27,7 +28,7 @@ export const getLatestVersionFromNPMRegistry = function (dir: string, name: stri
   };
   
   k.stderr.setEncoding('utf8');
-  k.stderr.pipe(process.stderr);
+  k.stderr.pipe(pt(chalk.yellow(`[ ${cmd} ]: `))).pipe(process.stderr);
   
   k.stdout.on('data', d => {
     result.npmVersion = result.npmVersion += String(d || '').trim();
@@ -66,7 +67,7 @@ export const getDistDataFromNPMRegistry = function (dir: string, name: string, c
     cwd: dir
   });
   
-  const cmd = `npm view ${name}@latest dist --json;`;
+  const cmd = `npm view ${name}@latest dist --json`;
   k.stdin.end(cmd);
   
   const result = {
@@ -75,7 +76,7 @@ export const getDistDataFromNPMRegistry = function (dir: string, name: string, c
   };
   
   k.stderr.setEncoding('utf8');
-  k.stderr.pipe(process.stderr);
+  k.stderr.pipe(pt(chalk.yellow(`[ ${cmd} ]: `))).pipe(process.stderr);
   
   let stdout = '';
   

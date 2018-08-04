@@ -22,6 +22,13 @@ commands="$basic_path/dist/commands"
 first_arg="$1";
 shift 1;
 
+if ! type -f json_stdio &> /dev/null || ! which json_stdio &> /dev/null; then
+  npm i -g -s "json-stdio@latest" || {
+    echo "Could not install json-stdio from NPM registry.";
+    exit 1;
+  }
+fi
+
 
 if [ "$first_arg" == "view" ] || [ "$first_arg" == "v" ]; then
 

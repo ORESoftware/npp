@@ -16,12 +16,14 @@ export interface NppJSONConf {
     master: string,
     integration: string
   },
+  searchRoot: string,
   searchRoots?: Array<string>,
   packages?: {[key: string]: boolean}
 }
 
 
 export interface NppJSONRootConf {
+  searchRoot: string,
   searchRoots: Array<string>
   packages: {[key:string]: any}
 }

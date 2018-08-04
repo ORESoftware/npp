@@ -39,7 +39,7 @@ export const getViewTable = function(opts: any){
     },
 
     {
-      header: 'Up-to-Date with remote?',
+      header: 'Up-to-Date w/ remote?',
       value: 'upToDateWithRemote'
     },
 

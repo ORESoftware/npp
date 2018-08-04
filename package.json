@@ -37,7 +37,7 @@
     "inquirer": "^6.0.0",
     "json-stdio": "latest",
     "prepend-transform": "latest",
-    "residence": "0.0.210",
+    "residence": "0.0.212",
     "semver": "^5.5.0",
     "shortid": "^2.2.12"
   },

@@ -6,6 +6,7 @@ import chalk from 'chalk';
 import shortid = require("shortid");
 import * as path from 'path';
 import * as stdio from 'json-stdio';
+import pt from 'prepend-transform';
 
 export const flattenDeep = function (a: Array<any>): Array<any> {
   return a.reduce((acc, val) => Array.isArray(val) ? acc.concat(flattenDeep(val)) : acc.concat(val), []);
@@ -53,7 +54,7 @@ export const getLocalTarballDistData = function (dir: string, name: string, cb: 
   };
   
   k.stderr.setEncoding('utf8');
-  k.stderr.pipe(process.stderr);
+  k.stderr.pipe(pt(chalk.yellow(`creating local tarball for package '${name}': `))).pipe(process.stderr);
   
   k.stdout.pipe(stdio.createParser()).once(stdio.stdEventName, v => {
     result.distData.shasum = String(v || '').trim().split(/\s+/)[0];

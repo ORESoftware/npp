@@ -59,11 +59,10 @@ const table = new Table({
 
 
 const cwd = process.cwd();
-const projectRoot = residence.findProjectRoot(cwd);
 
-if (!projectRoot) {
-  log.error( chalk.redBright('Could not find project root given current working directory:') , chalk.blueBright(cwd));
-  log.error(chalk.redBright('NPP looks for your project root based off the nearest package.json file, by walking down the fs tree. You might be missing a package.json file.'));
+const projectRoot = residence.findProjectRoot(cwd, '.npp.root.json');
+if(!projectRoot){
+  log.error(chalk.redBright('Could not find an .npp.root.json file within your current working directory.'));
   process.exit(1);
 }
 
@@ -83,7 +82,7 @@ const packages = primaryNPPFile.packages;
 async.autoInject({
 
     mapPaths(cb: EVCb<any>) {
-      mapPaths(searchRoots, cb);
+      mapPaths(searchRoots, projectRoot, cb);
     },
 
     getMap(mapPaths: Array<string>, cb: EVCb<any>) {

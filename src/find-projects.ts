@@ -260,8 +260,8 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
             
             if (npp && npp.searchRoots) {
               
-              const filtered = flattenDeep([npp.searchRoots]).map(v => String(v || '').trim()).filter(Boolean);
-              mapPaths(filtered, (err, results) => {
+              const filtered = flattenDeep([npp.searchRoots, npp.searchRoot]).map(v => String(v || '').trim()).filter(Boolean);
+              mapPaths(filtered, dir, (err, results) => {
                 
                 results.forEach(v => {
                   if (isSearchable(v)) {
@@ -307,10 +307,10 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                 }
               },
               
-              (err, results) => {
+              (err : any, results) => {
                 
                 if (err) {
-                  log.error(err);
+                  log.error(chalk.magenta(err.message || err));
                   process.exit(1);
                 }
                 
