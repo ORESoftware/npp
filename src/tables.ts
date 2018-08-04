@@ -19,7 +19,13 @@ export const getViewTable = function(opts: any){
     {
       header: 'NPM Registry Version',
       value: 'npmRegistryVersion',
-      conditionals: ['view_npm_registry']
+      conditionals: ['view_npm_registry', 'view_all']
+    },
+  
+    {
+      header: 'Shasum Match?',
+      value: 'shasumMatch',
+      conditionals: ['view_shasum', 'view_all']
     },
 
     {
@@ -40,7 +46,7 @@ export const getViewTable = function(opts: any){
     {
       header: 'Path',
       value: 'path',
-      conditionals: ['view_packages_path']
+      conditionals: ['view_packages_path', 'view_all']
     },
 
 

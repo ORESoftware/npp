@@ -1,8 +1,8 @@
 'use strict';
 
 import * as cp from 'child_process';
-import log from './logger';
-import {EVCb} from "./index";
+import log from '../logger';
+import {EVCb} from "../index";
 import chalk from "chalk";
 
 ////////////////////////////////////////////////////////////////

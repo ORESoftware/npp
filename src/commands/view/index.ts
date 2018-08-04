@@ -42,6 +42,11 @@ if (opts.help) {
   process.exit(0);
 }
 
+if(opts.view_all){
+  opts.view_npm_registry = true;
+  opts.view_packages_path = true;
+}
+
 opts.isView = true;
 
 const viewTable = getViewTable(opts);
@@ -65,7 +70,7 @@ if (!projectRoot) {
 let primaryNPPFile = null;
 
 try {
-  primaryNPPFile = require(path.resolve(projectRoot + '/.npp.json'));
+  primaryNPPFile = require(path.resolve(projectRoot + '/.npp.root.json'));
 }
 catch (err) {
   log.error('Could not load your primary project\'s .npp.json file.');

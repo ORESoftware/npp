@@ -20,12 +20,17 @@ const options =  [
   {
     names: ['view-npm-registry','view-registry'],
     type: 'bool',
-    help: 'See data from the NPM registry.'
+    help: 'See/view data from the NPM registry.'
   },
   {
     names: ['view-packages-path','view-path'],
     type: 'bool',
-    help: 'See data from the NPM registry.'
+    help: 'See/view absolute fs path to each package.'
+  },
+  {
+    names: ['view-all', 'all'],
+    type: 'bool',
+    help: 'See/view all data.'
   },
   {
     names: ['release'],

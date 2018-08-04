@@ -401,7 +401,6 @@ async.autoInject({
       async.mapLimit(publishArray, 1, (v, cb) => {
 
           const k = cp.spawn('bash');
-
           log.debug('Checking out release branch in path:', v.path);
 
           let pck = null, pkgJSONPath = path.resolve(v.path + '/package.json');
@@ -425,9 +424,8 @@ async.autoInject({
 
           const cmd = [
             `cd ${v.path}`,
-            `git checkout master`,  // checkout the integration branch first
-            `git pull`,
-            `git checkout -b "${releaseName}"` //  `git checkout "${releaseName}" HEAD`,
+            `git fetch origin master`, // fetch the integration branch first
+            `git checkout --no-track -b "${releaseName}" "remotes/origin/master"` //  `git checkout "${releaseName}" HEAD`,
           ]
           .join(' && ');
 
@@ -522,22 +520,29 @@ async.autoInject({
 
         log.debug('Checking to see if we can merge the release branch into master for path:', v.path);
 
+        const tempBranch = `${process.env.USER}/npp_tool/feature/${Date.now()}`;
+        const integrationCopy = `master_copy_npp_tool`;
+        const integrationBranch = 'remotes/origin/master';
+        
         let subshell = [
           `git checkout "${releaseName}"`,
+          `( git branch -D -f "${tempBranch}" &> /dev/null || echo "" )`,
           `git add .`,
           `git commit -am "modified package.json"`,
-          `git checkout master`,
-          `( git branch -D -f master_copy_npp_tool &> /dev/null || echo "" )`,
-          `git checkout -b master_copy_npp_tool`,
+          `git fetch origin`,
+          `( git branch -D -f "${integrationCopy}" &> /dev/null || echo "" )`,
+          `git checkout --no-track -b "${integrationCopy}" "${integrationBranch}"`,
           `git merge --no-commit -m "This release branch should be merged into master and integration." "${releaseName}"`,
           `git checkout ${releaseName}`,
           // `git tag ${chooseNewVersion}`,
           `git push --follow-tags -u origin ${releaseName}`
         ]
         .join(' && ');
+        
+        const safeCheckout = ` git checkout -b --no-track "${tempBranch}" "${integrationBranch}" `;
 
         // always checkout the integration branch again, at the end
-        const cmd = `cd ${v.path} && ( ${subshell} ) || { echo "Command failed"; git checkout -f master; exit 1; } && git checkout -f master;`;
+        const cmd = `cd ${v.path} && ( ${subshell} ) || { echo "Command failed"; ${safeCheckout}; exit 1; } && ${safeCheckout};`;
 
         k.stdin.end(cmd);
         k.stderr.pipe(pt(chalk.yellow.bold(`[${v.name}]: `))).pipe(process.stderr);

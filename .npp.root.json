@@ -1,20 +1,12 @@
 {
-  "vcs": {
-    "type":"git",
-    "value":{
-      "checkoutReleaseBranch": "echo '123 checking out release branch...'",
-      "pushToRemote": "git push"
-    }
-  },
-
   "searchRoots": [
     "/home/oleg/WebstormProjects/oresoftware/r2g",
-    "/home/oleg/WebstormProjects/oresoftware/sumanjs/suman",
-    "/home/oleg/WebstormProjects/oresoftware/sumanjs/suman-types",
-    "/home/oleg/WebstormProjects/oresoftware/sumanjs/suman-watch"
+    "/home/oleg/WebstormProjects/sumanjs/suman",
+    "/home/oleg/WebstormProjects/sumanjs/suman-types",
+    "/home/oleg/WebstormProjects/sumanjs/suman-watch"
   ],
   "packages": {
-    "@oresoftware/r2g": true,
+    "r2g": true,
     "suman": true,
     "suman-types": true,
     "suman-watch": true

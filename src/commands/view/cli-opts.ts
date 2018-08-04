@@ -1,10 +1,9 @@
 'use strict';
 
-
 const options = [
-
+  
   {
-    names: ['version','vn'],
+    names: ['version', 'vn'],
     type: 'bool',
     help: 'Print tool version and exit.'
   },
@@ -14,12 +13,17 @@ const options = [
     help: 'Print this help and exit.'
   },
   {
-    names: ['view-npm-registry','view-registry'],
+    names: ['view-npm-registry', 'view-registry'],
     type: 'bool',
     help: 'See data from the NPM registry.'
   },
   {
-    names: ['view-packages-path','view-full-path','view-path'],
+    names: ['view-packages-path', 'view-full-path', 'view-path'],
+    type: 'bool',
+    help: 'See/view absolute fs path to each package.'
+  },
+  {
+    names: ['view-all', 'all'],
     type: 'bool',
     help: 'See data from the NPM registry.'
   },
@@ -38,10 +42,12 @@ const options = [
 
 export default options;
 
-
 export type Opts = typeof options;
 
 export interface ViewOpts {
   help: boolean,
-  isView: boolean
+  isView: boolean,
+  view_all: boolean,
+  view_packages_path: boolean,
+  view_npm_registry: boolean
 }
