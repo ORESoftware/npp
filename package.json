@@ -1,6 +1,6 @@
 {
   "name": "@oresoftware/npp",
-  "version": "0.0.1001",
+  "version": "0.0.1002",
   "description": "Semver-oriented TypeScript library skeleton.",
   "main": "dist/index.js",
   "bin": {
