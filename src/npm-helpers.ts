@@ -5,6 +5,10 @@ import log from './logger';
 import {EVCb} from "./index";
 import chalk from "chalk";
 import pt from 'prepend-transform';
+import * as path from "path";
+import * as stdio from 'json-stdio';
+import {LocalDistDataResult} from './utils';
+import shortid = require('shortid');
 
 ////////////////////////////////////////////////////////////////
 
@@ -46,6 +50,7 @@ export const getLatestVersionFromNPMRegistry = function (dir: string, name: stri
   });
   
 };
+
 
 export interface DistData {
   integrity: string,
@@ -99,6 +104,59 @@ export const getDistDataFromNPMRegistry = function (dir: string, name: string, c
     catch (err) {
       cb(err, result);
     }
+    
+  });
+  
+};
+
+export interface NPMRegistryShasums {
+  exitCode: number,
+  shasums: Array<string>
+}
+
+export const getNPMTarballData = function (dir: string, name: string, cb: EVCb<NPMRegistryShasums>) {
+  
+  const k = cp.spawn('bash', [], {
+    cwd: dir
+  });
+  
+  const id = shortid.generate();
+  const p = `$HOME/.npp/temp/${id}`;
+  const bn = path.basename(dir);
+  
+  const cmd = [
+    `mkdir -p "${p}"`,
+    `cd "${p}"`,
+    `tgz="$(npm pack --loglevel=warn '${name}@latest')"`,
+    `json_stdio "$(sha1sum $tgz)"`,
+    `json_stdio "$(tar -xOzf $tgz | sort | sha1sum)"`,
+    `rm -rf "${p}"`
+  ]
+    .join(' && ');
+  
+  k.stdin.end(cmd);
+  
+  const result = <NPMRegistryShasums> {
+    exitCode: null as number,
+    shasums: []
+  };
+  
+  k.stderr.setEncoding('utf8');
+  k.stderr.pipe(pt(chalk.yellow(`creating local tarball for package '${name}': `))).pipe(process.stderr);
+  
+  k.stdout.pipe(stdio.createParser()).on(stdio.stdEventName, v => {
+    result.shasums.push(String(v || '').trim().split(/\s+/)[0]);
+  });
+  
+  k.once('exit', code => {
+    
+    result.exitCode = code;
+    
+    if (code > 0) {
+      return cb({code, message: `Could not run the following command: "${chalk.bold(cmd)}".`}, result);
+    }
+    
+    cb(null, result);
     
   });
   

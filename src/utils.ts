@@ -7,23 +7,15 @@ import shortid = require("shortid");
 import * as path from 'path';
 import * as stdio from 'json-stdio';
 import pt from 'prepend-transform';
+import {NPMRegistryShasums} from './npm-helpers';
 
 export const flattenDeep = function (a: Array<any>): Array<any> {
   return a.reduce((acc, val) => Array.isArray(val) ? acc.concat(flattenDeep(val)) : acc.concat(val), []);
 };
 
-export interface DistData {
-  integrity: string,
-  shasum: string,
-  tarball: string, // url
-  fileCount: number,
-  unpackedSize: number,
-  'npm-signature': string
-}
-
 export interface LocalDistDataResult {
   exitCode: number,
-  distData: DistData
+  shasums: Array<string>
 }
 
 export const getLocalTarballDistData = function (dir: string, name: string, cb: EVCb<LocalDistDataResult>) {
@@ -40,24 +32,25 @@ export const getLocalTarballDistData = function (dir: string, name: string, cb: 
     `mkdir -p "${p}"`,
     `rsync -r --exclude=node_modules "${dir}" "${p}"`,
     `cd "${p}/${bn}"`,
-    `my_tgz=$(npm pack --loglevel=warn)`,
-    `json_stdio "$(sha1sum $my_tgz)"`,
+    `tgz=$(npm pack --loglevel=warn)`,
+    `json_stdio "$(sha1sum $tgz)"`,
+    `json_stdio "$(tar -xOzf $tgz | sort | sha1sum)"`,
     `rm -rf "${p}"`
   ]
     .join(' && ');
   
   k.stdin.end(cmd);
   
-  const result = {
+  const result = <LocalDistDataResult>{
     exitCode: null as number,
-    distData: {} as DistData
+    shasums: []
   };
   
   k.stderr.setEncoding('utf8');
   k.stderr.pipe(pt(chalk.yellow(`creating local tarball for package '${name}': `))).pipe(process.stderr);
   
-  k.stdout.pipe(stdio.createParser()).once(stdio.stdEventName, v => {
-    result.distData.shasum = String(v || '').trim().split(/\s+/)[0];
+  k.stdout.pipe(stdio.createParser()).on(stdio.stdEventName, v => {
+    result.shasums.push(String(v || '').trim().split(/\s+/)[0]);
   });
   
   k.once('exit', code => {

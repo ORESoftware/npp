@@ -140,12 +140,13 @@ async.autoInject({
       
       Object.keys(clonedMap).forEach(k => {
         
-        const value = clonedMap[k];
+        const cm = clonedMap[k];
+        const value = cm.integrationBranch;
         
         if (!value.nppJSON) {
           console.error();
-          log.error('We need to know what vcs you are using in project:', chalk.blueBright(value.path));
-          log.error('Please add vcs information to the .npp.json file here:', chalk.blueBright(path.resolve(value.path + '/.npp.json')));
+          log.error('We need to know what vcs you are using in project:', chalk.blueBright(cm.path));
+          log.error('Please add vcs information to the .npp.json file here:', chalk.blueBright(path.resolve(cm.path + '/.npp.json')));
           log.error('To see the structure of a valid .npp.json file and the vcs property, see: https://github.com/ORESoftware/npp/blob/master/src/index.ts');
           process.exit(1);
         }
@@ -164,10 +165,10 @@ async.autoInject({
           process.exit(1);
         }
         
-        if (value.nppJSON.vcsType !== 'git') {
+        if (!(value.nppJSON && value.nppJSON.vcsType === 'git')) {
           console.error();
-          log.error('Currenly NPP only supports Git, as far as version control. The following package declared a VCS other than git:', value.path);
-          log.error('If this was a mistake, you can update your .npp.json file here:', path.resolve(value.path + '/.npp.json'));
+          log.error('Currenly NPP only supports Git, as far as version control. The following package declared a VCS other than git:', cm.path);
+          log.error('If this was a mistake, you can update your .npp.json file here:', path.resolve(cm.path + '/.npp.json'));
           process.exit(1);
         }
         
@@ -176,7 +177,7 @@ async.autoInject({
         }
         
         if (!value.workingDirectoryClean) {
-          errors.push('Working directory is not clean for package at path: ' + chalk.blueBright(value.path));
+          errors.push('Working directory is not clean for package at path: ' + chalk.blueBright(cm.path));
           allClean = false;
         }
         
@@ -259,26 +260,27 @@ async.autoInject({
       };
       
       Object.keys(confirmProjects).forEach(k => {
-        const v = confirmProjects[k];
+        const proj = confirmProjects[k];
+        const v = proj.integrationBranch;
         
         try {
           if (semver.lte(v.localVersion, youngestVersion)) {
             youngestVersion = v.localVersion;
-            youngestPackageName = v.name;
+            youngestPackageName = proj.name;
           }
         }
         catch (err) {
-          onVersionError(err, v.name, v.path);
+          onVersionError(err, proj.name, proj.path);
         }
         
         try {
           if (semver.gte(v.localVersion, oldestVersion)) {
             oldestVersion = v.localVersion;
-            oldestPackageName = v.name;
+            oldestPackageName = proj.name;
           }
         }
         catch (err) {
-          onVersionError(err, v.name, v.path);
+          onVersionError(err, proj.name, proj.path);
         }
         
       });

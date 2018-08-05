@@ -11,10 +11,11 @@ export const getViewTable = function(opts: any){
     //   header: 'Has valid .npp.json?',
     //   value: 'validNPPJSON'
     // },
-    {
-      header: 'Local Version',
-      value: 'localVersion'
-    },
+ 
+    // {
+    //   header: 'Local Version',
+    //   value: 'localVersion'
+    // },
 
     {
       header: 'NPM Registry Version',
@@ -22,26 +23,31 @@ export const getViewTable = function(opts: any){
       conditionals: ['view_npm_registry', 'view_all']
     },
   
-    {
-      header: 'Shasum Match?',
-      value: 'shasumMatch',
-      conditionals: ['view_shasum', 'view_all']
-    },
+    // {
+    //   header: 'Shasum Match?',
+    //   value: 'shasumMatch',
+    //   conditionals: ['view_shasum', 'view_all']
+    // },
 
     {
       header: 'Current Branch',
-      value: 'currentBranch'
+      value: 'currentBranchString'
+    },
+  
+    {
+      header: 'Integration Branch',
+      value: 'integrationBranchString'
     },
 
-    {
-      header: 'Clean?',
-      value: 'workingDirectoryClean'
-    },
-
-    {
-      header: 'Up-to-Date w/ remote?',
-      value: 'upToDateWithRemote'
-    },
+    // {
+    //   header: 'Clean?',
+    //   value: 'workingDirectoryClean'
+    // },
+    //
+    // {
+    //   header: 'Up-to-Date w/ remote?',
+    //   value: 'upToDateWithRemote'
+    // },
 
     {
       header: 'Path',

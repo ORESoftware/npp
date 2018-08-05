@@ -101,14 +101,14 @@ async.autoInject({
 
     Object.keys(map).forEach(k => {
 
-      const value : any = map[k];
+      const m : any = map[k];
       table.push(viewTable.map(v => {
 
-        if(!(v.value in value)){
+        if(!(v.value in m)){
           log.debug('map value does not have this property:', v.value);
-          log.debug('The map looks like:', value);
+          log.debug('The map looks like:', m);
         }
-        return v.value in value? value[v.value] : '(missing data)'
+        return v.value in m? m[v.value] : '(missing data)'
       }));
 
     });

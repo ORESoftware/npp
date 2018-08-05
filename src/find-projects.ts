@@ -6,8 +6,23 @@ import async = require('async');
 import log from "./logger";
 import * as util from "util";
 import chalk from "chalk";
-import {BranchNameData, getCurrentBranchName, getStatus, GitStatusData} from "./vcs-helpers/git-helpers";
-import {DistDataResult, getDistDataFromNPMRegistry, getLatestVersionFromNPMRegistry, RegistryData} from "./npm-helpers";
+
+import {
+  BranchNameData,
+  getCurrentBranchName,
+  getStatusOfCurrentBranch,
+  getStatusOfIntegrationBranch,
+  GitStatusData
+} from "./vcs-helpers/git-helpers";
+
+import {
+  DistDataResult,
+  getDistDataFromNPMRegistry,
+  getLatestVersionFromNPMRegistry,
+  getNPMTarballData, NPMRegistryShasums,
+  RegistryData
+} from "./npm-helpers";
+
 import {EVCb, NppJSONConf} from "./index";
 import {flattenDeep, getLocalTarballDistData, LocalDistDataResult} from "./utils";
 import {mapPaths} from "./map-paths";
@@ -22,17 +37,24 @@ export enum GitStatus {
   HAS_CHANGES = '(git repo has uncommitted changes)'
 }
 
-export interface SearchResult {
-  currentBranch: string,
-  localVersion: string,
-  npmRegistryVersion: string,
+export interface BranchInfo {
+  packageJSON: any,
+  nppJSON: any,
   shasumMatch: boolean,
+  localVersion: string,
+  branchName: string,
+  workingDirectoryClean: boolean,
+  upToDateWithRemote: boolean,
+}
+
+export interface SearchResult {
+  currentBranch: BranchInfo,
+  currentBranchString: string,
+  integrationBranch: BranchInfo,
+  integrationBranchString: string,
+  npmRegistryVersion: string,
   name: string,
   path: string,
-  upToDateWithRemote: boolean,
-  workingDirectoryClean: boolean,
-  packageJSON: any,
-  nppJSON: NppJSONConf,
   releaseBranchName?: string
 }
 
@@ -291,11 +313,16 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                 },
                 
                 checkGitStatus(cb: EVCb<GitStatusData>) {
-                  getStatus(dir, '<remote>', cb);
+                  getStatusOfCurrentBranch(dir, '<remote>', cb);
                 },
                 
-                getBranchName(checkGitStatus: any, cb: EVCb<BranchNameData>) {
+                getBranchName(cb: EVCb<BranchNameData>) {
                   getCurrentBranchName(dir, '<remote>', cb);
+                },
+                
+                getStatusOfIntegrationBranch(checkGitStatus: any, cb: EVCb<GitStatusData>) {
+                  // note we need to check the status of the current branch before checking out the integration branch
+                  getStatusOfIntegrationBranch(dir, '<remote>', 'remotes/origin/master', cb);
                 },
                 
                 getRegistryDistData(cb: EVCb<DistDataResult>) {
@@ -304,26 +331,37 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                 
                 getLocalDistData(cb: EVCb<LocalDistDataResult>) {
                   getLocalTarballDistData(dir, name, cb);
+                },
+                
+                getNPMTarballData(cb: EVCb<NPMRegistryShasums>) {
+                  getNPMTarballData(dir, name, cb)
                 }
               },
               
-              (err : any, results) => {
+              (err: any, results) => {
                 
                 if (err) {
                   log.error(chalk.magenta(err.message || err));
                   process.exit(1);
                 }
                 
+                if (status.searching === false) {
+                  return cb(null);
+                }
+                
                 const localDistData = results.getLocalDistData as LocalDistDataResult;
                 const npmDistData = results.getRegistryDistData as DistDataResult;
+                const npmShasums = results.getNPMTarballData as NPMRegistryShasums;
                 
                 log.debug('local dist data:', localDistData);
                 log.debug('npm dist data:', npmDistData);
+                log.debug('npm shasums:', npmShasums);
                 
                 let shasumMatch = false;
                 
                 try {
-                  shasumMatch = localDistData.distData.shasum === npmDistData.distData.shasum
+                  shasumMatch = localDistData.shasums.includes(npmDistData.distData.shasum) ||
+                    localDistData.shasums.some(v => npmShasums.shasums.includes(v));
                 }
                 catch (err) {
                   log.warn(err.message);
@@ -333,15 +371,28 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                 
                 map[name] = {
                   name,
-                  localVersion: version,
-                  shasumMatch: shasumMatch,
-                  npmRegistryVersion: results.getLatestVersionFromNPMRegistry.npmVersion,
-                  currentBranch: results.getBranchName.branchName,
-                  workingDirectoryClean: results.checkGitStatus.workingDirectoryClean,
-                  upToDateWithRemote: results.checkGitStatus.upToDateWithRemote,
                   path: dir,
-                  packageJSON: parsedPkgJSON,
-                  nppJSON: npp || null,
+                  npmRegistryVersion: results.getLatestVersionFromNPMRegistry.npmVersion,
+                  currentBranchString: 'foo current',
+                  currentBranch: {
+                    packageJSON: parsedPkgJSON,
+                    nppJSON: npp || null,
+                    shasumMatch: shasumMatch,
+                    localVersion: version,
+                    branchName: results.getBranchName.branchName,
+                    workingDirectoryClean: results.checkGitStatus.workingDirectoryClean,
+                    upToDateWithRemote: results.checkGitStatus.upToDateWithRemote,
+                  },
+                  integrationBranchString: 'bar integration',
+                  integrationBranch: {
+                    packageJSON: null,
+                    nppJSON: null,
+                    shasumMatch: shasumMatch,
+                    localVersion: version,
+                    branchName: 'remotes/origin/master',
+                    workingDirectoryClean: results.getStatusOfIntegrationBranch.workingDirectoryClean,
+                    upToDateWithRemote: results.getStatusOfIntegrationBranch.upToDateWithRemote,
+                  },
                 };
                 
                 cb(null);

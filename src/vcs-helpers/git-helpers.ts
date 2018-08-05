@@ -5,6 +5,7 @@ import log from '../logger';
 import {EVCb} from "../index";
 import chalk from "chalk";
 import async = require('async');
+import * as stdio from 'json-stdio';
 
 ////////////////////////////////////////////////////////////////
 
@@ -17,7 +18,87 @@ export interface GitStatusData {
 export type Task = (cb: EVCb<any>) => void;
 const gitQueue = async.queue<Task, any>((task, cb) => task(cb), 1);
 
-export const getStatus = function (dir: string, remote: string, cb: EVCb<GitStatusData>) {
+
+export const getStatusOfIntegrationBranch = function (dir: string, remote: string, integration: string, cb: EVCb<GitStatusData>) {
+  
+  gitQueue.push(cb => {
+    
+    const k = cp.spawn('bash', [], {
+      cwd: dir
+    });
+    
+    const result = {
+      exitCode: null as number,
+      upToDateWithRemote: false,
+      workingDirectoryClean: false
+    };
+    
+    let stdout = '';
+    
+    k.stderr.setEncoding('utf8');
+    k.stderr.pipe(process.stderr);
+    
+    k.stdout.pipe(stdio.createParser()).once(stdio.stdEventName, d => {
+      stdout = String(d.value || '');
+    });
+    
+    
+    const tempIntegrationBranch = `npp_tool/integration_temp/${Date.now()}`;
+    
+    const cmd = [
+      `git fetch origin`,
+      `( ( git branch --list 'npp_tool/integration_temp/*' | xargs -r git branch -D ) &> /dev/null || echo "" )`,
+      `git branch --no-track ${tempIntegrationBranch} ${integration}`,
+      `git checkout ${tempIntegrationBranch}`,
+      `json_stdio "$(git status -v)"`
+    ]
+      .join(' && ');
+    
+    k.stdin.end(cmd);
+    
+    k.once('exit', code => {
+      
+      if (code > 0) {
+        log.error(`Could not run "${cmd}" at path:`, dir);
+      }
+      
+      stdout = String(stdout).trim();
+      
+      result.exitCode = code;
+      
+      if (stdout.match(/Your branch is up-to-date with/ig) || stdout.match(/Your branch is up to date with/ig)) {
+        log.debug('Branch is up to date with remote:', dir);
+        result.upToDateWithRemote = true;
+      }
+      else {
+        log.debug('Branch at path is not up to date:', dir);
+        log.debug('Stdout:', stdout);
+      }
+      
+      if (stdout.match(/nothing to commit, working directory clean/ig) || stdout.match(/nothing to commit, working tree clean/ig)) {
+        log.debug('Working directory clean:', dir);
+        result.workingDirectoryClean = true;
+      }
+      else {
+        log.debug('Working directory is not clean:', dir);
+        log.debug('Stdout:', stdout);
+      }
+      
+      let err = null;
+      
+      if (code > 0) {
+        err = {code, message: `Could not run the following command: ${chalk.bold(cmd)}`};
+      }
+      
+      cb(err, result);
+      
+    });
+    
+  }, cb);
+  
+};
+
+export const getStatusOfCurrentBranch = function (dir: string, remote: string, cb: EVCb<GitStatusData>) {
   
   gitQueue.push(cb => {
   
@@ -87,8 +168,6 @@ export const getStatus = function (dir: string, remote: string, cb: EVCb<GitStat
     });
     
   }, cb);
-  
-
   
 };
 
