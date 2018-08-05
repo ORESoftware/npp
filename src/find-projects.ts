@@ -8,6 +8,8 @@ import * as util from "util";
 import chalk from "chalk";
 
 import {
+  AllLocalBranches,
+  allLocalBranches,
   BranchNameData,
   getCurrentBranchName,
   getStatusOfCurrentBranch,
@@ -50,6 +52,7 @@ export interface BranchInfo {
 }
 
 export interface SearchResult {
+  allLocalBranchesString: string,
   currentBranch: BranchInfo,
   currentBranchString: string,
   integrationBranch: BranchInfo,
@@ -345,6 +348,10 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                 
                 readPackageJsonAndNPP(getStatusOfIntegrationBranch: any, cb: EVCb<JSONData>) {
                   readPackageJSONandNPP(dir, cb);
+                },
+              
+                checkMergedForAllLocalBranches( cb: EVCb<AllLocalBranches>){
+                  allLocalBranches(dir, name, cb);
                 }
               },
               
@@ -364,6 +371,8 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                 const npmDistData = results.getRegistryDistData as DistDataResult;
                 const npmShasums = results.getNPMTarballData as NPMRegistryShasums;
                 const integrationBranchJSON = results.readPackageJsonAndNPP as JSONData;
+                const allLocalBranches = results.checkMergedForAllLocalBranches as AllLocalBranches;
+                
                 
                 // log.debug('local dist data:', localDistDataCurrentBranch);
                 // log.debug('npm dist data:', npmDistData);
@@ -409,6 +418,10 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                   name,
                   path: dir,
                   npmRegistryVersion: results.getLatestVersionFromNPMRegistry.npmVersion,
+  
+                  allLocalBranchesString: allLocalBranches.results.map(v => {
+                       return `${v.branch} => ${v.value === 'merged' ? chalk.green('merged') : chalk.yellow(v.value)}`;
+                  }).join('\n'),
                   
                   currentBranchString: [
                     currentBranchName,

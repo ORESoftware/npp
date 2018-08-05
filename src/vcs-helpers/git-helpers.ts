@@ -270,13 +270,10 @@ export const getRemoteURL = function (dir: string, remote: string, cb: EVCb<GitR
 };
 
 
-
-
 export interface AllLocalBranches {
   exitCode: number,
   results: Array<{branch: string, value: string}>
 }
-
 
 export const allLocalBranches = function (dir: string, remote: string, cb: EVCb<AllLocalBranches>) {
   

@@ -17,7 +17,7 @@ else
 fi
 
 json_stdio `cat <<EOF
-  {"branch":"${branch_name}","result":"${result}"}
+  {"branch":"${branch_name}","value":"${result}"}
 EOF`
 
 

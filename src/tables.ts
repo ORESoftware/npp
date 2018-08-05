@@ -38,6 +38,11 @@ export const getViewTable = function(opts: any){
       header: 'Integration Branch',
       value: 'integrationBranchString'
     },
+    
+    {
+      header: 'All Local Branches',
+      value: 'allLocalBranchesString'
+    },
 
     // {
     //   header: 'Clean?',
