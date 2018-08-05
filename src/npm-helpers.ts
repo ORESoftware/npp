@@ -161,3 +161,52 @@ export const getNPMTarballData = function (dir: string, name: string, cb: EVCb<N
   });
   
 };
+
+export interface GitStashShow {
+  exitCode: number,
+  gitStash: string
+}
+
+
+export const getStash = function (dir: string, name: string, cb: EVCb<GitStashShow>) {
+  
+  const k = cp.spawn('bash', [], {
+    cwd: dir
+  });
+  
+  const id = shortid.generate();
+  const p = `$HOME/.npp/temp/${id}`;
+  const bn = path.basename(dir);
+  
+  const cmd = [
+   `git stash show`
+  ]
+    .join(' ');
+  
+  k.stdin.end(cmd);
+  
+  const result = <GitStashShow> {
+    exitCode: null as number,
+    gitStash: ''
+  };
+  
+  k.stderr.setEncoding('utf8');
+  k.stderr.pipe(pt(chalk.yellow(`running git stash show for '${name}': `))).pipe(process.stderr);
+  
+  k.stdout.on('data', v => {
+     result.gitStash += String(v || '');
+  });
+  
+  k.once('exit', code => {
+    
+    result.exitCode = code;
+    
+    if (code > 0) {
+      return cb({code, message: `Could not run the following command: "${chalk.bold(cmd)}".`}, result);
+    }
+    
+    cb(null, result);
+    
+  });
+  
+};
