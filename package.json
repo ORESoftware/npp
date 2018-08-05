@@ -4,7 +4,9 @@
   "description": "Semver-oriented TypeScript library skeleton.",
   "main": "dist/index.js",
   "bin": {
-    "npp": "cli/npp.sh"
+    "npp": "cli/npp.sh",
+    "npp_check_merge": "cli/npp_check_merge.sh",
+    "npp_install_json_stdio": "cli/npp_install_json_stdio.sh"
   },
   "types": "dist/index.d.ts",
   "typings": "dist/index.d.ts",

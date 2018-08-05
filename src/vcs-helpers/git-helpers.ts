@@ -268,3 +268,68 @@ export const getRemoteURL = function (dir: string, remote: string, cb: EVCb<GitR
   }, cb);
   
 };
+
+
+
+
+export interface AllLocalBranches {
+  exitCode: number,
+  results: Array<{branch: string, value: string}>
+}
+
+
+export const allLocalBranches = function (dir: string, remote: string, cb: EVCb<AllLocalBranches>) {
+  
+  getQueue(dir).push(cb => {
+    
+    const k = cp.spawn('bash', [], {
+      cwd: dir
+    });
+    
+    const cmd = [
+      `set -e`,
+      `npp_install_json_stdio`,
+      `git fetch origin`,
+      `git branch -l | tr -d " *" | while read branch; do`,
+      // for each local branch,
+      // we check if the last commit is already merged into integration branch
+      `npp_check_merge "$branch" "master"`,
+      `done`
+    ].join('\n');
+    
+    k.stdin.end(cmd);
+    
+    const res = <AllLocalBranches>{
+      exitCode: null as number,
+      results: []
+    };
+    
+    k.stderr.setEncoding('utf8');
+    k.stderr.pipe(pt(`[${dir}]: `)).pipe(process.stderr);
+    
+    k.stdout.pipe(stdio.createParser()).on(stdio.stdEventName, d => {
+      res.results.push(d);
+    });
+    
+    k.once('exit', code => {
+      
+      res.exitCode = code;
+      
+      if (code > 0) {
+        return cb({code, message: `Could not run the following command: ${chalk.bold(cmd)}`}, res);
+      }
+      
+      try{
+        res.results = res.results.map(v => JSON.parse(String(v).trim()));
+        cb(null, res);
+      }
+      catch(err){
+        cb(err);
+      }
+   
+      
+    });
+    
+  }, cb);
+  
+};
