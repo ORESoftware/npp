@@ -7,6 +7,7 @@ import chalk from "chalk";
 import async = require('async');
 import * as stdio from 'json-stdio';
 import * as path from 'path';
+import pt from 'prepend-transform';
 
 ////////////////////////////////////////////////////////////////
 
@@ -44,11 +45,11 @@ export const getStatusOfIntegrationBranch = function (dir: string, remote: strin
     let stdout = '';
     
     k.stderr.setEncoding('utf8');
-    k.stderr.pipe(process.stderr);
+    k.stderr.pipe(pt(`[${dir}]: `)).pipe(process.stderr);
     
     k.stdout.pipe(stdio.createParser()).on(stdio.stdEventName, d => {
       stdout = String(d || '');
-      log.info('stdout for integration branch status:', chalk.blue(stdout));
+      log.debug('stdout for integration branch status:', chalk.blue(stdout));
     });
     
     const tempIntegrationBranch = `npp_tool/integration_temp/${Date.now()}`;
@@ -59,7 +60,7 @@ export const getStatusOfIntegrationBranch = function (dir: string, remote: strin
       // `git branch --no-track ${tempIntegrationBranch} ${integration}`,
       `git branch ${tempIntegrationBranch} ${integration}`,
       `git checkout ${tempIntegrationBranch}`,
-      `json_stdio "$(git status -v | tr -d '\n')"`
+      `json_stdio "$(git status -v |  tr '\r\n' ' ')"` // replace newline char with space
     ]
       .join(' && ');
     
@@ -124,17 +125,13 @@ export const getStatusOfCurrentBranch = function (dir: string, remote: string, c
     let stdout = '';
     
     k.stderr.setEncoding('utf8');
-    k.stderr.pipe(process.stderr);
+    k.stderr.pipe(pt(`[${dir}]: `)).pipe(process.stderr);
     
     k.stdout.on('data', d => {
       stdout += String(d || '').trim();
     });
     
-    k.stderr.on('data', d => {
-      stdout += String(d || '').trim();
-    });
-    
-    const cmd = `git status -v | tr -d '\n'`;
+    const cmd = `git status -v |  tr '\r\n' ' '`;  // replace newline chars with space
     
     k.stdin.end(cmd);
     
@@ -203,7 +200,7 @@ export const getCurrentBranchName = function (dir: string, remote: string, cb: E
     };
     
     k.stderr.setEncoding('utf8');
-    k.stderr.pipe(process.stderr);
+    k.stderr.pipe(pt(`[${dir}]:`)).pipe(process.stderr);
     
     k.stdout.on('data', d => {
       result.branchName = result.branchName += String(d || '').trim();
@@ -248,7 +245,7 @@ export const getRemoteURL = function (dir: string, remote: string, cb: EVCb<GitR
     };
     
     k.stderr.setEncoding('utf8');
-    k.stderr.pipe(process.stderr);
+    k.stderr.pipe(pt(`[${dir}]: `)).pipe(process.stderr);
     
     k.stdout.on('data', d => {
       result.gitRemoteURL = result.gitRemoteURL += String(d || '').trim();
