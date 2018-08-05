@@ -37,8 +37,7 @@ process.once('exit', code => {
 });
 
 export interface ReleaseInfo {
-  releaseName: string,
-  gitRemoteURL: string
+  releaseName: string
 }
 
 const allowUnknown = process.argv.indexOf('--allow-unknown') > 0;
@@ -402,7 +401,7 @@ async.autoInject({
       
       const publishArray = choosePublishingOrder.slice(0);
       
-      async.mapLimit(publishArray, 1, (v, cb) => {
+      async.mapLimit(publishArray, 3, (v, cb) => {
           
           const k = cp.spawn('bash');
           log.debug('Checking out release branch in path:', v.path);
@@ -515,7 +514,7 @@ async.autoInject({
     
     modifyReleaseBranches(startPublish: Array<SearchResult>, chooseNewVersion: string, cb: EVCb<Array<ReleaseInfo>>) {
       
-      async.mapLimit(startPublish, 3, (v, cb) => {
+      async.mapLimit(startPublish, 1, (v, cb) => {
         
         console.log();
         const releaseName = v.releaseBranchName;
@@ -523,7 +522,7 @@ async.autoInject({
         
         log.debug('Checking to see if we can merge the release branch into master for path:', v.path);
         
-        const tempBranch = `${process.env.USER}/npp_tool/feature/${String(Date.now()).slice(0,-3)}`;
+        const tempBranch = `${process.env.USER}/npp_tool/feature/${String(Date.now()).slice(0, -3)}`;
         const masterCopy = `npp_tool/master_copy`;
         const masterBranch = 'remotes/origin/master';
         const integrationBranch = 'remotes/origin/master';
@@ -569,10 +568,17 @@ async.autoInject({
           }
           
           log.info('The release branch should be mergeable to the master branch at path:', v.path);
+          console.log();
           
-          cb(null, {
-            releaseName,
-            gitRemoteURL: 'dummy value fix later',
+          // the user must merge the release branches into master, before we actually publish to NPM
+          const prompt = rl.createInterface({
+            input: process.stdin,
+            output: process.stdout
+          });
+          
+          prompt.question(chalk.bgBlueBright.whiteBright(`Your release branch for repo "${chalk.bold(v.name)}" has been pushed. Merge it on the remote manually. To contine hit return.`), (answer) => {
+            prompt.close();
+            cb(null, {releaseName});
           });
           
         });
@@ -581,29 +587,29 @@ async.autoInject({
       
     },
     
-    mergeReleaseBranches(modifyReleaseBranches: Array<ReleaseInfo>, cb: EVCb<any>) {
-      
-      console.log();
-      
-      modifyReleaseBranches.forEach(v => {
-        log.info('Release branch:', v.releaseName, 'at remote:', v.gitRemoteURL);
-      });
-      
-      console.log();
-      
-      // the user must merge the release branches into master, before we actually publish to NPM
-      const prompt = rl.createInterface({
-        input: process.stdin,
-        output: process.stdout
-      });
-      
-      prompt.question('Your release branches have all been created at the above locations. ' +
-        'Please merge them all into their respective master branches. That might take you some time, that is OK. To contine hit return.', (answer) => {
-        prompt.close();
-        cb(null);
-      });
-      
-    }
+    // mergeReleaseBranches(modifyReleaseBranches: Array<ReleaseInfo>, cb: EVCb<any>) {
+    //
+    //   console.log();
+    //
+    //   modifyReleaseBranches.forEach(v => {
+    //     log.info('Release branch:', v.releaseName, 'at remote:', v.gitRemoteURL);
+    //   });
+    //
+    //   console.log();
+    //
+    //   // the user must merge the release branches into master, before we actually publish to NPM
+    //   const prompt = rl.createInterface({
+    //     input: process.stdin,
+    //     output: process.stdout
+    //   });
+    //
+    //   prompt.question('Your release branches have all been created at the above locations. ' +
+    //     'Please merge them all into their respective master branches. That might take you some time, that is OK. To contine hit return.', (answer) => {
+    //     prompt.close();
+    //     cb(null);
+    //   });
+    //
+    // }
     
   },
   
