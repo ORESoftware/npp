@@ -269,10 +269,9 @@ export const getRemoteURL = function (dir: string, remote: string, cb: EVCb<GitR
   
 };
 
-
 export interface AllLocalBranches {
   exitCode: number,
-  results: Array<{branch: string, value: string}>
+  results: Array<{ branch: string, value: string }>
 }
 
 export const allLocalBranches = function (dir: string, remote: string, cb: EVCb<AllLocalBranches>) {
@@ -316,14 +315,61 @@ export const allLocalBranches = function (dir: string, remote: string, cb: EVCb<
         return cb({code, message: `Could not run the following command: ${chalk.bold(cmd)}`}, res);
       }
       
-      try{
+      try {
         res.results = res.results.map(v => JSON.parse(String(v).trim()));
         cb(null, res);
       }
-      catch(err){
+      catch (err) {
         cb(err);
       }
-   
+      
+    });
+    
+  }, cb);
+  
+};
+
+export interface GitStashShow {
+  exitCode: number,
+  gitStash: string
+}
+
+export const getStash = function (dir: string, name: string, cb: EVCb<GitStashShow>) {
+  
+  getQueue(dir).push(cb => {
+    
+    const k = cp.spawn('bash', [], {
+      cwd: dir
+    });
+    
+    const cmd = `git stash show | cat`;  // always exit with 0
+    k.stdin.end(cmd);
+    
+    const result = <GitStashShow> {
+      exitCode: null,
+      gitStash: ''
+    };
+    
+    k.stderr.setEncoding('utf8');
+    k.stderr.pipe(pt(chalk.yellow(`running git stash show for '${name}': `))).pipe(process.stderr);
+    
+    k.stdout.on('data', v => {
+      result.gitStash += String(v || '');
+    });
+  
+    k.stderr.on('data', v => {
+      result.gitStash += String(v || '');
+    });
+    
+    k.once('exit', code => {
+      
+      result.exitCode = code;
+      
+      if (code > 0) {
+        return cb({code, message: `Could not run the following command: "${chalk.bold(cmd)}".`}, result);
+      }
+      
+      cb(null, result);
       
     });
     

@@ -20,6 +20,19 @@ export interface LocalDistDataResult {
   shasums: Array<string>
 }
 
+export const wrapString = (count: number, str: string) => {
+  const letters = [], ln = str.length;
+  
+  for(let i = 0; i < ln; i++){
+    letters.push(str[i]);
+    if(i> 0 && i%count === 0){
+      letters.push('\n');
+    }
+  }
+  
+  return letters.join('');
+};
+
 export const getLocalTarballDistData = function (dir: string, name: string, cb: EVCb<LocalDistDataResult>) {
   
   const k = cp.spawn('bash', [], {

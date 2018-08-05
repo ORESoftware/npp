@@ -28,6 +28,11 @@ const options =  [
     help: 'See/view absolute fs path to each package.'
   },
   {
+    names: ['view-git-stash', 'view-stash'],
+    type: 'bool',
+    help: 'See results from the "git stash show" command for each git repo.'
+  },
+  {
     names: ['view-all', 'all'],
     type: 'bool',
     help: 'See/view all data.'

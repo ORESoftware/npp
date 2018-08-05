@@ -9,6 +9,7 @@ import {mapPaths} from "../../map-paths";
 import {EVCb} from "../../index";
 import options, {PublishOpts} from './cli-opts';
 import * as path from "path";
+import * as stdio from 'json-stdio';
 
 const dashdash = require('dashdash');
 import * as rl from 'readline';
@@ -372,7 +373,7 @@ async.autoInject({
       
     },
     
-    areYouReadyToPublish(choosePublishingOrder: Array<SearchResult>, cb: EVCb<any>) {
+    areYouReadyToCraftReleaseBranches(choosePublishingOrder: Array<SearchResult>, cb: EVCb<any>) {
       
       console.log();
       
@@ -381,7 +382,7 @@ async.autoInject({
         output: process.stdout
       });
       
-      prompt.question(promptColorFn(' => Are you ready to publish? (y/n) ') + ' ', answer => {
+      prompt.question(promptColorFn(' => Are you ready to craft release branches? (y/n) ') + ' ', answer => {
         
         prompt.close();
         
@@ -397,7 +398,7 @@ async.autoInject({
       
     },
     
-    startPublish(areYouReadyToPublish: any, chooseNewVersion: string, choosePublishingOrder: Array<SearchResult>, cb: EVCb<any>) {
+    startPublish(areYouReadyToCraftReleaseBranches: any, chooseNewVersion: string, choosePublishingOrder: Array<SearchResult>, cb: EVCb<any>) {
       
       const publishArray = choosePublishingOrder.slice(0);
       
@@ -512,7 +513,7 @@ async.autoInject({
       
     },
     
-    modifyReleaseBranches(startPublish: Array<SearchResult>, chooseNewVersion: string, cb: EVCb<Array<ReleaseInfo>>) {
+    modifyReleaseBranches(startPublish: Array<SearchResult>, chooseNewVersion: string, cb: EVCb<Array<SearchResult>>) {
       
       async.mapLimit(startPublish, 1, (v, cb) => {
         
@@ -522,7 +523,7 @@ async.autoInject({
         
         log.debug('Checking to see if we can merge the release branch into master for path:', v.path);
         
-        const tempBranch = `${process.env.USER}/npp_tool/feature/${String(Date.now()).slice(0, -3)}`;
+        const tempBranch = v.tempFeatureBranch = `${process.env.USER}/npp_tool/feature/${String(Date.now()).slice(0, -3)}`;
         const masterCopy = `npp_tool/master_copy`;
         const masterBranch = 'remotes/origin/master';
         const integrationBranch = 'remotes/origin/master';
@@ -576,10 +577,16 @@ async.autoInject({
             output: process.stdout
           });
           
-          prompt.question(chalk.bgBlueBright.whiteBright(`Your release branch for repo "${chalk.bold(v.name)}" has been pushed. Merge it on the remote manually. To contine hit return.`), (answer) => {
-            prompt.close();
-            cb(null, {releaseName});
-          });
+          prompt.question(promptColorFn(
+            [`Your release branch for repo "${chalk.bold(v.name)}" has been pushed. Merge it on the remote manually.`,
+              `https://www.yahoo.com`,
+              `To contine hit return.`
+            ].join('\n')
+          ) + ' ',
+            (answer) => {
+              prompt.close();
+              cb(null, v);
+            });
           
         });
         
@@ -587,29 +594,165 @@ async.autoInject({
       
     },
     
-    // mergeReleaseBranches(modifyReleaseBranches: Array<ReleaseInfo>, cb: EVCb<any>) {
-    //
-    //   console.log();
-    //
-    //   modifyReleaseBranches.forEach(v => {
-    //     log.info('Release branch:', v.releaseName, 'at remote:', v.gitRemoteURL);
-    //   });
-    //
-    //   console.log();
-    //
-    //   // the user must merge the release branches into master, before we actually publish to NPM
-    //   const prompt = rl.createInterface({
-    //     input: process.stdin,
-    //     output: process.stdout
-    //   });
-    //
-    //   prompt.question('Your release branches have all been created at the above locations. ' +
-    //     'Please merge them all into their respective master branches. That might take you some time, that is OK. To contine hit return.', (answer) => {
-    //     prompt.close();
-    //     cb(null);
-    //   });
-    //
-    // }
+    areYouReadyToPublish(modifyReleaseBranches: Array<SearchResult>, cb: EVCb<any>) {
+      
+      console.log();
+      
+      const prompt = rl.createInterface({
+        input: process.stdin,
+        output: process.stdout
+      });
+      
+      prompt.question(promptColorFn(' => Are you ready to publish? (y/n) ') + ' ', answer => {
+        
+        prompt.close();
+        
+        if ((String(answer || '').trim().toLowerCase().startsWith('y'))) {
+          return cb(null);
+        }
+        
+        log.info(chalk.yellow('You need to use a phrase that starts with y/Y to contine on.'));
+        log.info(chalk.yellow('Too bad things didnt work out, better luck next time.'));
+        process.exit(1);
+        
+      });
+      
+    },
+    
+    publish(areYouReadyToPublish: any, modifyReleaseBranches: Array<SearchResult>, cb: EVCb<Array<'foo'>>) {
+      
+      const publish = (releaseName: string, tempBranch: string, pth: string, name: string, cb: EVCb<'foo'>) => {
+        
+        console.log();
+        const k = cp.spawn('bash');
+        
+        let subshell = [
+          `git checkout "${releaseName}"`,
+          // `git pull`, // the user might delete the release branches on the remote
+          `npm publish`,
+        ]
+          .join(' && ');
+        
+        const safeCheckout = ` git checkout "${tempBranch}" -f`;
+        
+        // always checkout the integration branch again, at the end
+        const cmd = `cd ${pth} && ( ${subshell} ) || { echo "Command failed"; ${safeCheckout}; exit 1; } && ${safeCheckout};`;
+        
+        k.stdin.end(cmd);
+        k.stderr.pipe(pt(chalk.yellow.bold(`[publishing ${name}]: `))).pipe(process.stderr);
+        
+        k.once('exit', code => {
+          
+          if (code > 0) {
+            
+            log.error('Could not merge release branch into master branch for path:', pth);
+            log.error('Please inspect your git repo at path:', pth);
+            
+            return cb({
+              code,
+              message: 'Could not run command at path: ' + pth,
+              cmd,
+              path: pth,
+              packageName: name
+            });
+          }
+          
+          console.log();
+          log.info('The following package was published:', name);
+          console.log();
+          cb(null, 'foo');
+          
+        });
+      };
+      
+      async.mapLimit(modifyReleaseBranches, 1, (v, cb) => {
+        
+        console.log();
+        const releaseName = v.releaseBranchName;
+        const tempBranch = v.tempFeatureBranch;
+        const k = cp.spawn('bash');
+        
+        const cmd = [
+          `cd ${v.path}`,
+          `git fetch origin master`,
+          `npp_check_merge "${releaseName}" "remote/origin/master"`,
+        ]
+          .join(' && ');
+        
+        const result = {
+          checkMerge: ''
+        };
+        
+        k.stdin.end(cmd);
+        k.stderr.pipe(pt(chalk.yellow.bold(`[publishing ${v.name}]: `))).pipe(process.stderr);
+        
+        k.stdout.pipe(stdio.createParser()).once(stdio.stdEventName, v => {
+          result.checkMerge = v;
+        });
+        
+        k.once('exit', code => {
+          
+          if (code > 0) {
+            
+            log.error('Could not merge release branch into master branch for path:', v.path);
+            log.error('Please inspect your git repo at path:', v.path);
+            
+            return cb({
+              code,
+              message: 'Could not run command at path: ' + v.path,
+              cmd,
+              path: v.path,
+              packageName: v.name
+            });
+          }
+          
+          let merged = false;
+          
+          try {
+            merged = JSON.parse(result.checkMerge).value === 'merged';
+          }
+          catch (err) {
+            return cb(err);
+          }
+          
+          const runPublish = () => {
+            publish(releaseName, tempBranch, v.path, v.name, cb);
+          };
+          
+          if (merged) {
+            return runPublish();
+          }
+          
+          const prompt = rl.createInterface({
+            input: process.stdin,
+            output: process.stdout
+          });
+          
+          prompt.question(
+            
+            promptColorFn(
+              `It appears that the release branch for package "${v.name}" is not merged into master, is everything OK? (y/n) `
+            ) + ' ',
+            
+            answer => {
+              
+              prompt.close();
+              
+              if ((String(answer || '').trim().toLowerCase().startsWith('y'))) {
+                return runPublish();
+              }
+              
+              log.info(chalk.yellow('You need to use a phrase that starts with y/Y to contine on.'));
+              log.info(chalk.yellow('Too bad things didnt work out, better luck next time.'));
+              process.exit(1);
+              
+            });
+          
+        });
+        
+      }, cb);
+      
+    },
     
   },
   

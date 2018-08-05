@@ -28,6 +28,12 @@ export const getViewTable = function(opts: any){
     //   value: 'shasumMatch',
     //   conditionals: ['view_shasum', 'view_all']
     // },
+  
+    {
+      header: 'Git Stash',
+      value: 'gitStashString',
+      conditionals: ['view_git_stash', 'view_all']
+    },
 
     {
       header: 'Current Branch',
@@ -56,7 +62,7 @@ export const getViewTable = function(opts: any){
 
     {
       header: 'Path',
-      value: 'path',
+      value: 'pathString',
       conditionals: ['view_packages_path', 'view_all']
     },
 
