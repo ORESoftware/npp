@@ -8,6 +8,8 @@ import * as path from 'path';
 import * as stdio from 'json-stdio';
 import pt from 'prepend-transform';
 import {NPMRegistryShasums} from './npm-helpers';
+import async = require('async');
+import * as fs from 'fs';
 
 export const flattenDeep = function (a: Array<any>): Array<any> {
   return a.reduce((acc, val) => Array.isArray(val) ? acc.concat(flattenDeep(val)) : acc.concat(val), []);
@@ -62,6 +64,47 @@ export const getLocalTarballDistData = function (dir: string, name: string, cb: 
     }
     
     cb(null, result);
+    
+  });
+  
+};
+
+export interface JSONData {
+  packageJSON: any,
+  nppJSON: any
+}
+
+export const readPackageJSONandNPP = function (dir: string, cb: EVCb<JSONData>) {
+  
+  const result = <JSONData>{
+    packageJSON: null,
+    nppJSON: null
+  };
+  
+  async.parallel({
+    
+    packageJSON(cb: EVCb<any>) {
+      fs.readFile(path.resolve(dir + '/package.json'), cb);
+    },
+    
+    nppJSON(cb: EVCb<any>) {
+      fs.readFile(path.resolve(dir + '/.npp.json'), cb);
+    }
+    
+  }, (err, results) => {
+    
+    if (err) {
+      return cb({err, message: `Could not read package.json or .npp.json file.`}, result);
+    }
+    
+    try {
+      result.packageJSON = JSON.parse(String(results.packageJSON));
+      result.nppJSON = JSON.parse(String(results.nppJSON));
+      cb(null, result);
+    }
+    catch (err) {
+      cb(err, result);
+    }
     
   });
   

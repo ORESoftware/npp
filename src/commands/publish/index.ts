@@ -185,12 +185,12 @@ async.autoInject({
         
         table.push(viewTable.map(v => {
           
-          if (!(v.value in value)) {
+          if (!(v.value in cm)) {
             log.debug('map value does not have this property:', v.value);
-            log.debug('The map looks like:', value);
+            log.debug('The map looks like:', cm);
           }
           
-          return v.value in value ? (value as any)[v.value] : '(missing data)'
+          return v.value in cm ? (cm as any)[v.value] : '(missing data)'
         }));
         
       });

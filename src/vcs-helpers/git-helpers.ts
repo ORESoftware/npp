@@ -6,6 +6,7 @@ import {EVCb} from "../index";
 import chalk from "chalk";
 import async = require('async');
 import * as stdio from 'json-stdio';
+import * as path from 'path';
 
 ////////////////////////////////////////////////////////////////
 
@@ -40,6 +41,7 @@ export const getStatusOfIntegrationBranch = function (dir: string, remote: strin
     
     k.stdout.pipe(stdio.createParser()).once(stdio.stdEventName, d => {
       stdout = String(d.value || '');
+      log.info('stdout for integration branch status:', chalk.blue(stdout));
     });
     
     
@@ -50,7 +52,7 @@ export const getStatusOfIntegrationBranch = function (dir: string, remote: strin
       `( ( git branch --list 'npp_tool/integration_temp/*' | xargs -r git branch -D ) &> /dev/null || echo "" )`,
       `git branch --no-track ${tempIntegrationBranch} ${integration}`,
       `git checkout ${tempIntegrationBranch}`,
-      `json_stdio "$(git status -v)"`
+      `json_stdio "$(git status -v | tr -d '\n')"`
     ]
       .join(' && ');
     
@@ -60,11 +62,15 @@ export const getStatusOfIntegrationBranch = function (dir: string, remote: strin
       
       if (code > 0) {
         log.error(`Could not run "${cmd}" at path:`, dir);
+        return cb({code});
       }
       
       stdout = String(stdout).trim();
       
       result.exitCode = code;
+  
+      result.upToDateWithRemote = true;
+      result.workingDirectoryClean = true;
       
       if (stdout.match(/Your branch is up-to-date with/ig) || stdout.match(/Your branch is up to date with/ig)) {
         log.debug('Branch is up to date with remote:', dir);
@@ -72,7 +78,7 @@ export const getStatusOfIntegrationBranch = function (dir: string, remote: strin
       }
       else {
         log.debug('Branch at path is not up to date:', dir);
-        log.debug('Stdout:', stdout);
+        log.debug('Stdout:', chalk.magenta(stdout));
       }
       
       if (stdout.match(/nothing to commit, working directory clean/ig) || stdout.match(/nothing to commit, working tree clean/ig)) {
@@ -81,7 +87,7 @@ export const getStatusOfIntegrationBranch = function (dir: string, remote: strin
       }
       else {
         log.debug('Working directory is not clean:', dir);
-        log.debug('Stdout:', stdout);
+        log.debug(`Stdout for ${path.basename(dir)}:`, chalk.magenta(stdout));
       }
       
       let err = null;
@@ -125,7 +131,7 @@ export const getStatusOfCurrentBranch = function (dir: string, remote: string, c
       stdout += String(d || '').trim();
     });
   
-    const cmd = `git status -v`;
+    const cmd = `git status -v | tr -d '\n'`;
   
     k.stdin.end(cmd);
   
@@ -133,6 +139,7 @@ export const getStatusOfCurrentBranch = function (dir: string, remote: string, c
     
       if (code > 0) {
         log.error(`Could not run "${cmd}" at path:`, dir);
+        return cb({code});
       }
     
       stdout = String(stdout).trim();
