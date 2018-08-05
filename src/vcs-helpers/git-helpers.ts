@@ -39,8 +39,8 @@ export const getStatusOfIntegrationBranch = function (dir: string, remote: strin
     k.stderr.setEncoding('utf8');
     k.stderr.pipe(process.stderr);
     
-    k.stdout.pipe(stdio.createParser()).once(stdio.stdEventName, d => {
-      stdout = String(d.value || '');
+    k.stdout.pipe(stdio.createParser()).on(stdio.stdEventName, d => {
+      stdout = String(d || '');
       log.info('stdout for integration branch status:', chalk.blue(stdout));
     });
     
@@ -50,7 +50,8 @@ export const getStatusOfIntegrationBranch = function (dir: string, remote: strin
     const cmd = [
       `git fetch origin`,
       `( ( git branch --list 'npp_tool/integration_temp/*' | xargs -r git branch -D ) &> /dev/null || echo "" )`,
-      `git branch --no-track ${tempIntegrationBranch} ${integration}`,
+      // `git branch --no-track ${tempIntegrationBranch} ${integration}`,
+      `git branch ${tempIntegrationBranch} ${integration}`,
       `git checkout ${tempIntegrationBranch}`,
       `json_stdio "$(git status -v | tr -d '\n')"`
     ]
@@ -66,11 +67,7 @@ export const getStatusOfIntegrationBranch = function (dir: string, remote: strin
       }
       
       stdout = String(stdout).trim();
-      
       result.exitCode = code;
-  
-      result.upToDateWithRemote = true;
-      result.workingDirectoryClean = true;
       
       if (stdout.match(/Your branch is up-to-date with/ig) || stdout.match(/Your branch is up to date with/ig)) {
         log.debug('Branch is up to date with remote:', dir);

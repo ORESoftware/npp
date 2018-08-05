@@ -515,7 +515,7 @@ async.autoInject({
     
     modifyReleaseBranches(startPublish: Array<SearchResult>, chooseNewVersion: string, cb: EVCb<Array<ReleaseInfo>>) {
       
-      async.mapLimit(startPublish, 1, (v, cb) => {
+      async.mapLimit(startPublish, 3, (v, cb) => {
         
         console.log();
         const releaseName = v.releaseBranchName;
@@ -523,7 +523,7 @@ async.autoInject({
         
         log.debug('Checking to see if we can merge the release branch into master for path:', v.path);
         
-        const tempBranch = `${process.env.USER}/npp_tool/feature/${Date.now()}`;
+        const tempBranch = `${process.env.USER}/npp_tool/feature/${String(Date.now()).slice(0,-3)}`;
         const masterCopy = `npp_tool/master_copy`;
         const masterBranch = 'remotes/origin/master';
         const integrationBranch = 'remotes/origin/master';
@@ -544,7 +544,7 @@ async.autoInject({
         ]
           .join(' && ');
         
-        const safeCheckout = ` git branch --no-track "${tempBranch}" "${integrationBranch}"; git checkout "${tempBranch}" `;
+        const safeCheckout = ` git branch "${tempBranch}" "${integrationBranch}"; git checkout "${tempBranch}"; git push -u origin ${tempBranch}`;
         
         // always checkout the integration branch again, at the end
         const cmd = `cd ${v.path} && ( ${subshell} ) || { echo "Command failed"; ${safeCheckout}; exit 1; } && ${safeCheckout};`;
