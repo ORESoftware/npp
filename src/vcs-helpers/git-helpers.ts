@@ -52,7 +52,7 @@ export const getStatusOfIntegrationBranch = function (dir: string, remote: strin
       log.debug('stdout for integration branch status:', chalk.blue(stdout));
     });
     
-    const tempIntegrationBranch = `npp_tool/integration_temp/${Date.now()}`;
+    const tempIntegrationBranch = `npp_tool/integration_temp/${String(Date.now()).slice(0,-3)}`;
     
     const cmd = [
       `git fetch origin`,

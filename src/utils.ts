@@ -10,6 +10,7 @@ import pt from 'prepend-transform';
 import {NPMRegistryShasums} from './npm-helpers';
 import async = require('async');
 import * as fs from 'fs';
+import * as assert from "assert";
 
 export const flattenDeep = function (a: Array<any>): Array<any> {
   return a.reduce((acc, val) => Array.isArray(val) ? acc.concat(flattenDeep(val)) : acc.concat(val), []);
@@ -19,6 +20,15 @@ export interface LocalDistDataResult {
   exitCode: number,
   shasums: Array<string>
 }
+
+export const assertString = (str: string) : string => {
+  assert.strictEqual(typeof str, 'string');
+  const index = str.indexOf('#');
+  if(index > 0){
+    str = str.slice(0, index);
+  }
+  return str;
+};
 
 export const wrapString = (count: number, str: string) => {
   const letters = [], ln = str.length;

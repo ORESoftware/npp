@@ -230,7 +230,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
               parsedPkgJSON = JSON.parse(String(results.readPackageJSON));
             }
             catch (err) {
-              log.error('trouble parsing package.json file at path => ', item);
+              log.error('trouble parsing package.json file at path => ', chalk.magenta(item));
               log.error(err.message || err);
               return cb(err);
             }

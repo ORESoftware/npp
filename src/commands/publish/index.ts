@@ -63,7 +63,7 @@ opts.isPublish = true;
 const viewTable = getViewTable(opts);
 
 import Table = require('cli-table');
-import {flattenDeep} from "../../utils";
+import {assertString, flattenDeep} from "../../utils";
 import * as util from "util";
 
 const table = new Table({
@@ -140,19 +140,40 @@ async.autoInject({
       
       Object.keys(clonedMap).forEach(k => {
         
-        const cm = clonedMap[k];
-        const value = cm.integrationBranch;
+        const mapv = clonedMap[k];
+        const integrationBranchValue = mapv.integrationBranch;
+        const currentBranchValue = mapv.currentBranch;
         
-        if (!value.nppJSON) {
+        if (!integrationBranchValue.nppJSON) {
           console.error();
-          log.error('We need to know what vcs you are using in project:', chalk.blueBright(cm.path));
-          log.error('Please add vcs information to the .npp.json file here:', chalk.blueBright(path.resolve(cm.path + '/.npp.json')));
+          log.error('We need to know what vcs you are using in project:', chalk.blueBright(mapv.path));
+          log.error('Please add vcs information to the .npp.json file here:', chalk.blueBright(path.resolve(mapv.path + '/.npp.json')));
           log.error('To see the structure of a valid .npp.json file and the vcs property, see: https://github.com/ORESoftware/npp/blob/master/src/index.ts');
           process.exit(1);
         }
         
         try {
-          const valid = validate(value.nppJSON);
+          assert.deepStrictEqual(integrationBranchValue.packageJSON, currentBranchValue.packageJSON);
+        }
+        catch (err) {
+          log.warn(
+            'The package.json file in your current branch differs from the integration branch =>',
+            chalk.magenta(err.message)
+          );
+        }
+        
+        try {
+          assert.deepStrictEqual(integrationBranchValue.packageJSON, currentBranchValue.packageJSON);
+        }
+        catch (err) {
+          log.warn(
+            'The .npp.json file in your current branch differs from the integration branch.',
+            chalk.magenta(err.message)
+          );
+        }
+        
+        try {
+          const valid = validate(integrationBranchValue.nppJSON);
           if (!valid) {
             throw validate.errors;
           }
@@ -160,24 +181,24 @@ async.autoInject({
         catch (err) {
           log.error(err.message);
           log.error('Your .npp.root.json file is not valid - it does not match the validation schema.');
-          log.error('Your .npp.json is as follows:', value.nppJSON);
+          log.error('Your .npp.json is as follows:', integrationBranchValue.nppJSON);
           log.error('And the schema is like so:', nppSchema);
           process.exit(1);
         }
         
-        if (!(value.nppJSON && value.nppJSON.vcsType === 'git')) {
+        if (!(integrationBranchValue.nppJSON && integrationBranchValue.nppJSON.vcsType === 'git')) {
           console.error();
-          log.error('Currenly NPP only supports Git, as far as version control. The following package declared a VCS other than git:', cm.path);
-          log.error('If this was a mistake, you can update your .npp.json file here:', path.resolve(cm.path + '/.npp.json'));
+          log.error('Currenly NPP only supports Git, as far as version control. The following package declared a VCS other than git:', mapv.path);
+          log.error('If this was a mistake, you can update your .npp.json file here:', path.resolve(mapv.path + '/.npp.json'));
           process.exit(1);
         }
         
-        if (!value.upToDateWithRemote) {
+        if (!integrationBranchValue.upToDateWithRemote) {
           allUpToDateWithRemote = false;
         }
         
-        if (!value.workingDirectoryClean) {
-          errors.push('Working directory is not clean for package at path: ' + chalk.blueBright(cm.path));
+        if (!integrationBranchValue.workingDirectoryClean) {
+          errors.push('Working directory is not clean for package at path: ' + chalk.blueBright(mapv.path));
           allClean = false;
         }
         
@@ -185,12 +206,12 @@ async.autoInject({
         
         table.push(viewTable.map(v => {
           
-          if (!(v.value in cm)) {
+          if (!(v.value in mapv)) {
             log.debug('map value does not have this property:', v.value);
-            log.debug('The map looks like:', cm);
+            log.debug('The map looks like:', mapv);
           }
           
-          return v.value in cm ? (cm as any)[v.value] : '(missing data)'
+          return v.value in mapv ? (mapv as any)[v.value] : '(missing data)'
         }));
         
       });
@@ -424,7 +445,7 @@ async.autoInject({
             return cb(err);
           }
           
-          const releaseName = v.releaseBranchName = `${process.env.USER}/npp_tool/release/${Date.now()}`;
+          const releaseName = v.releaseBranchName = `${process.env.USER}/npp_tool/release/${String(Date.now()).slice(0, -3)}`;
           
           const cmd = [
             `cd ${v.path}`,
@@ -577,9 +598,38 @@ async.autoInject({
             output: process.stdout
           });
           
+          
+          let url: string = null;
+          
+          try{
+            url = assertString(v.integrationBranch.nppJSON.urlToRemoteRepo);
+          }
+          catch(err){
+            try{
+              url = assertString(v.integrationBranch.packageJSON.homepage);
+            }
+            catch(err){
+              try{
+                url = assertString(v.integrationBranch.packageJSON.bugs.url);
+                url = url.slice(0, url.indexOf('/issues'));
+              }
+              catch(err){
+                try{
+                  url = assertString(v.integrationBranch.packageJSON.repository.url);
+                  url = url.replace(/.*(?=http)/,'');  // remove anything that does not start with http
+                }
+                catch(err){
+                  log.warn('Could not grab www url for package:', chalk.magenta(v.name));
+                }
+              }
+            }
+          }
+          
+          url = url || `(no url to the remote repo for package "${v.name}" could be determined).`;
+          
           prompt.question(promptColorFn(
             [`Your release branch for repo "${chalk.bold(v.name)}" has been pushed. Merge it on the remote manually.`,
-              `https://www.yahoo.com`,
+              `${url}`,
               `To contine hit return.`
             ].join('\n')
           ) + ' ',
@@ -626,14 +676,18 @@ async.autoInject({
         console.log();
         const k = cp.spawn('bash');
         
+        const integrationBranch = 'master';
+        const integrationBranchRemote = 'remotes/origin/master';
+        
         let subshell = [
+          `git fetch origin ${integrationBranch}`,
           `git checkout "${releaseName}"`,
           // `git pull`, // the user might delete the release branches on the remote
           `npm publish`,
         ]
           .join(' && ');
         
-        const safeCheckout = ` git checkout "${tempBranch}" -f`;
+        const safeCheckout = ` git checkout "${tempBranch}" -f; git merge ${integrationBranchRemote}`;
         
         // always checkout the integration branch again, at the end
         const cmd = `cd ${pth} && ( ${subshell} ) || { echo "Command failed"; ${safeCheckout}; exit 1; } && ${safeCheckout};`;
@@ -658,7 +712,7 @@ async.autoInject({
           }
           
           console.log();
-          log.info('The following package was published:', name);
+          log.info(chalk.green('The following package was published:'), chalk.greenBright.bold(name));
           console.log();
           cb(null, 'foo');
           
@@ -675,7 +729,7 @@ async.autoInject({
         const cmd = [
           `cd ${v.path}`,
           `git fetch origin master`,
-          `npp_check_merge "${releaseName}" "remote/origin/master"`,
+          `npp_check_merge "${releaseName}" "remotes/origin/master"`,
         ]
           .join(' && ');
         
@@ -729,7 +783,6 @@ async.autoInject({
           });
           
           prompt.question(
-            
             promptColorFn(
               `It appears that the release branch for package "${v.name}" is not merged into master, is everything OK? (y/n) `
             ) + ' ',
