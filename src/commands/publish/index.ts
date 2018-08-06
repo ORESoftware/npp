@@ -611,12 +611,13 @@ async.autoInject({
             catch(err){
               try{
                 url = assertString(v.integrationBranch.packageJSON.bugs.url);
-                url = url.slice(0, url.indexOf('/issues'));
+                url = url.replace(/\/issues$/, '');  // if ends in /issues, remote that part
               }
               catch(err){
                 try{
                   url = assertString(v.integrationBranch.packageJSON.repository.url);
                   url = url.replace(/.*(?=http)/,'');  // remove anything that does not start with http
+                  url = url.replace(/\.git$/, '');  // if ends in .git, remote that part
                 }
                 catch(err){
                   log.warn('Could not grab www url for package:', chalk.magenta(v.name));
