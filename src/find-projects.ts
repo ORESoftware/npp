@@ -307,7 +307,9 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
               
                 getRepoDir(cb: EVCb<string>){
                   git.getGitRepoPath(dir,'<remote>', (err, v) => {
-                    log.error('v.path:', v.path);
+                    if(!err && !(v.path && typeof v.path === 'string')){
+                      err = new Error('Could not find corresponding git repo for dir:' + dir);
+                    }
                     cb(err, v && v.path);
                   });
                 },

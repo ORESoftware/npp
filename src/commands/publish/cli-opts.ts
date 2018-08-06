@@ -33,7 +33,7 @@ const options =  [
     help: 'See results from the "git stash show" command for each git repo.'
   },
   {
-    names: ['view-all', 'all'],
+    names: ['view-all', 'all', 'a'],
     type: 'bool',
     help: 'See/view all data.'
   },

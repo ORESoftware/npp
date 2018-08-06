@@ -11,10 +11,9 @@ import pt from 'prepend-transform';
 
 ////////////////////////////////////////////////////////////////
 
-
-
 export type Task = (cb: EVCb<any>) => void;
 
+const gitRepoQueue = async.queue<Task, any>((task, cb) => task(cb), 1);
 const queues = new Map<string, async.AsyncQueue<Task>>();
 
 const getQueue = (dir: string): async.AsyncQueue<Task> => {
@@ -29,49 +28,51 @@ export interface GitRepoPath {
   path: string
 }
 
-export const getGitRepoPath = function(dir: string, remote: string, cb: EVCb<GitRepoPath>){
+export const getGitRepoPath = function (dir: string, remote: string, cb: EVCb<GitRepoPath>) {
   
-  const k = cp.spawn('bash');
-  
-  const result = <GitRepoPath>{
-    exitCode: null as number,
-     path: ''
-  };
-  
-  k.stderr.setEncoding('utf8');
-  k.stderr.pipe(pt(`[${dir}]: `)).pipe(process.stderr);
-  
-  k.stdout.on('data', d => {
-    result.path += String(d || '').trim();
-  });
-  
-  const cmd = `cd "${dir}" && git rev-parse --show-toplevel`;
-  k.stdin.end(cmd);
-  
-  k.once('exit', code => {
-  
-    result.exitCode = code;
-    let err = null;
+  gitRepoQueue.push(cb => {
     
-    if (code > 0) {
-      log.error(`Could not run "${cmd}" at path:`, dir);
-      err = {code, message: `Could not run the following command: ${chalk.bold(cmd)}`};
-    }
+    const k = cp.spawn('bash');
     
-    result.path = String(result.path || '').trim()
-    cb(err, result);
+    const result = <GitRepoPath>{
+      exitCode: null as number,
+      path: ''
+    };
     
-  });
+    k.stderr.setEncoding('utf8');
+    k.stderr.pipe(pt(`[${dir}]: `)).pipe(process.stderr);
+    
+    k.stdout.on('data', d => {
+      result.path += String(d || '').trim();
+    });
+    
+    const cmd = `cd "${dir}" && git rev-parse --show-toplevel`;
+    k.stdin.end(cmd);
+    
+    k.once('exit', code => {
+      
+      result.exitCode = code;
+      let err = null;
+      
+      if (code > 0) {
+        log.error(`Could not run "${cmd}" at path:`, dir);
+        err = {code, message: `Could not run the following command: ${chalk.bold(cmd)}`};
+      }
+      
+      result.path = String(result.path || '').trim();
+      cb(err, result);
+      
+    });
+    
+  }, cb);
   
 };
-
 
 export interface GitStatusData {
   exitCode: number,
   upToDateWithRemote: boolean,
   workingDirectoryClean: boolean
 }
-
 
 export const getStatusOfIntegrationBranch = (dir: string, remote: string, integration: string, cb: EVCb<GitStatusData>): void => {
   
@@ -95,7 +96,7 @@ export const getStatusOfIntegrationBranch = (dir: string, remote: string, integr
       log.debug('stdout for integration branch status:', chalk.blue(stdout));
     });
     
-    const tempIntegrationBranch = `npp_tool/integration_temp/${String(Date.now()).slice(0,-3)}`;
+    const tempIntegrationBranch = `npp_tool/integration_temp/${String(Date.now()).slice(0, -3)}`;
     
     const cmd = [
       `cd "${dir}"`,
@@ -111,11 +112,10 @@ export const getStatusOfIntegrationBranch = (dir: string, remote: string, integr
     k.stdin.end(cmd);
     
     k.once('exit', code => {
-  
+      
       result.exitCode = code;
       
       stdout = String(stdout).trim();
-      
       
       if (stdout.match(/Your branch is up-to-date with/ig) || stdout.match(/Your branch is up to date with/ig)) {
         log.debug('Branch is up to date with remote:', dir);
@@ -388,7 +388,7 @@ export const getStash = (dir: string, name: string, cb: EVCb<GitStashShow>): voi
     k.stdout.on('data', v => {
       result.gitStash += String(v || '');
     });
-  
+    
     k.stderr.on('data', v => {
       result.gitStash += String(v || '');
     });

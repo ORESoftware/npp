@@ -23,7 +23,7 @@ const options = [
     help: 'See/view absolute fs path to each package.'
   },
   {
-    names: ['view-all', 'all'],
+    names: ['view-all', 'all', 'a'],
     type: 'bool',
     help: 'See data from the NPM registry.'
   },

@@ -30,10 +30,6 @@ export const mapPaths = (searchRoots: Array<string>, root: string, cb: EVCb<Arra
     });
   });
   
-  k.once('error', (e) => {
-    log.error(e.stack || e);
-  });
-  
   k.once('exit', code => {
     
     if (code > 0) {
