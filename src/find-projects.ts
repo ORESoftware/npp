@@ -8,14 +8,7 @@ import * as util from "util";
 import chalk from "chalk";
 
 import * as git from "./vcs-helpers/git-helpers";
-
-import {
-  DistDataResult,
-  getDistDataFromNPMRegistry,
-  getLatestVersionFromNPMRegistry,
-  getNPMTarballData, NPMRegistryShasums,
-  RegistryData
-} from "./npm-helpers";
+import * as npmh from "./npm-helpers";
 
 import {EVCb, NppJSONConf} from "./index";
 import * as nppUtils from "./utils";
@@ -300,33 +293,40 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
             
             async.autoInject({
                 
-                getLatestVersionFromNPMRegistry(cb: EVCb<RegistryData>) {
+                getLatestVersionFromNPMRegistry(cb: EVCb<npmh.RegistryData>) {
                   
                   if (!opts.isPublish && !opts.view_npm_registry) {
-                    return process.nextTick(cb, null, <RegistryData> {
+                    return process.nextTick(cb, null, <npmh.RegistryData> {
                       exitCode: null,
                       npmVersion: ''
                     });
                   }
-                  
-                  getLatestVersionFromNPMRegistry(dir, name, cb);
+  
+                  npmh.getLatestVersionFromNPMRegistry(dir, name, cb);
+                },
+              
+                getRepoDir(cb: EVCb<string>){
+                  git.getGitRepoPath(dir,'<remote>', (err, v) => {
+                    log.error('v.path:', v.path);
+                    cb(err, v && v.path);
+                  });
                 },
                 
-                checkGitStatus(cb: EVCb<git.GitStatusData>) {
-                  git.getStatusOfCurrentBranch(dir, '<remote>', cb);
+                checkGitStatus(getRepoDir: string, cb: EVCb<git.GitStatusData>) {
+                  git.getStatusOfCurrentBranch(getRepoDir, '<remote>', cb);
                 },
                 
-                getBranchName(cb: EVCb<git.BranchNameData>) {
-                  git.getCurrentBranchName(dir, '<remote>', cb);
+                getBranchName(getRepoDir: string, cb: EVCb<git.BranchNameData>) {
+                  git.getCurrentBranchName(getRepoDir, '<remote>', cb);
                 },
                 
-                getStatusOfIntegrationBranch(checkGitStatus: any, getLocalDistDataCurrentBranch: any, cb: EVCb<git.GitStatusData>) {
+                getStatusOfIntegrationBranch(getRepoDir: string, checkGitStatus: any, getLocalDistDataCurrentBranch: any, cb: EVCb<git.GitStatusData>) {
                   // note we need to check the status of the current branch before checking out the integration branch
-                  git.getStatusOfIntegrationBranch(dir, '<remote>', 'remotes/origin/master', cb);
+                  git.getStatusOfIntegrationBranch(getRepoDir, '<remote>', 'remotes/origin/master', cb);
                 },
                 
-                getRegistryDistData(cb: EVCb<DistDataResult>) {
-                  getDistDataFromNPMRegistry(dir, name, cb);
+                getRegistryDistData(cb: EVCb<npmh.DistDataResult>) {
+                  npmh.getDistDataFromNPMRegistry(dir, name, cb);
                 },
                 
                 getLocalDistDataCurrentBranch(cb: EVCb<nppUtils.LocalDistDataResult>) {
@@ -337,20 +337,20 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                   nppUtils.getLocalTarballDistData(dir, name, cb);
                 },
                 
-                getNPMTarballData(cb: EVCb<NPMRegistryShasums>) {
-                  getNPMTarballData(dir, name, cb)
+                getNPMTarballData(cb: EVCb<npmh.NPMRegistryShasums>) {
+                  npmh.getNPMTarballData(dir, name, cb)
                 },
                 
                 readPackageJsonAndNPP(getStatusOfIntegrationBranch: any, cb: EVCb<nppUtils.JSONData>) {
                   nppUtils.readPackageJSONandNPP(dir, cb);
                 },
                 
-                checkMergedForAllLocalBranches(cb: EVCb<git.AllLocalBranches>) {
-                  git.allLocalBranches(dir, name, cb);
+                checkMergedForAllLocalBranches(getRepoDir: string, cb: EVCb<git.AllLocalBranches>) {
+                  git.allLocalBranches(getRepoDir, name, cb);
                 },
                 
-                showGitStash(cb: EVCb<git.GitStashShow>) {
-                  git.getStash(dir, name, cb);
+                showGitStash(getRepoDir: string, cb: EVCb<git.GitStashShow>) {
+                  git.getStash(getRepoDir, name, cb);
                 }
               },
               
@@ -367,8 +367,8 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                 
                 const localDistDataIntegrationBranch = results.getLocalDistDataIntegrationBranch as nppUtils.LocalDistDataResult;
                 const localDistDataCurrentBranch = results.getLocalDistDataCurrentBranch as nppUtils.LocalDistDataResult;
-                const npmDistData = results.getRegistryDistData as DistDataResult;
-                const npmShasums = results.getNPMTarballData as NPMRegistryShasums;
+                const npmDistData = results.getRegistryDistData as npmh.DistDataResult;
+                const npmShasums = results.getNPMTarballData as npmh.NPMRegistryShasums;
                 const integrationBranchJSON = results.readPackageJsonAndNPP as nppUtils.JSONData;
                 const allLocalBranches = results.checkMergedForAllLocalBranches as git.AllLocalBranches;
                 let gitStash = (results.showGitStash as git.GitStashShow).gitStash || '(no stdout/stderr)';

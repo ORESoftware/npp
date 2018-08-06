@@ -11,11 +11,7 @@ import pt from 'prepend-transform';
 
 ////////////////////////////////////////////////////////////////
 
-export interface GitStatusData {
-  exitCode: number,
-  upToDateWithRemote: boolean,
-  workingDirectoryClean: boolean
-}
+
 
 export type Task = (cb: EVCb<any>) => void;
 
@@ -28,13 +24,60 @@ const getQueue = (dir: string): async.AsyncQueue<Task> => {
   return queues.get(dir);
 };
 
-export const getStatusOfIntegrationBranch = function (dir: string, remote: string, integration: string, cb: EVCb<GitStatusData>) {
+export interface GitRepoPath {
+  exitCode: number,
+  path: string
+}
+
+export const getGitRepoPath = function(dir: string, remote: string, cb: EVCb<GitRepoPath>){
+  
+  const k = cp.spawn('bash');
+  
+  const result = <GitRepoPath>{
+    exitCode: null as number,
+     path: ''
+  };
+  
+  k.stderr.setEncoding('utf8');
+  k.stderr.pipe(pt(`[${dir}]: `)).pipe(process.stderr);
+  
+  k.stdout.on('data', d => {
+    result.path += String(d || '').trim();
+  });
+  
+  const cmd = `cd "${dir}" && git rev-parse --show-toplevel`;
+  k.stdin.end(cmd);
+  
+  k.once('exit', code => {
+  
+    result.exitCode = code;
+    let err = null;
+    
+    if (code > 0) {
+      log.error(`Could not run "${cmd}" at path:`, dir);
+      err = {code, message: `Could not run the following command: ${chalk.bold(cmd)}`};
+    }
+    
+    result.path = String(result.path || '').trim()
+    cb(err, result);
+    
+  });
+  
+};
+
+
+export interface GitStatusData {
+  exitCode: number,
+  upToDateWithRemote: boolean,
+  workingDirectoryClean: boolean
+}
+
+
+export const getStatusOfIntegrationBranch = (dir: string, remote: string, integration: string, cb: EVCb<GitStatusData>): void => {
   
   getQueue(dir).push(cb => {
     
-    const k = cp.spawn('bash', [], {
-      cwd: dir
-    });
+    const k = cp.spawn('bash');
     
     const result = {
       exitCode: null as number,
@@ -55,6 +98,7 @@ export const getStatusOfIntegrationBranch = function (dir: string, remote: strin
     const tempIntegrationBranch = `npp_tool/integration_temp/${String(Date.now()).slice(0,-3)}`;
     
     const cmd = [
+      `cd "${dir}"`,
       `git fetch origin`,
       `( ( git branch --list 'npp_tool/integration_temp/*' | xargs -r git branch -D ) &> /dev/null || echo "" )`,
       // `git branch --no-track ${tempIntegrationBranch} ${integration}`,
@@ -67,14 +111,11 @@ export const getStatusOfIntegrationBranch = function (dir: string, remote: strin
     k.stdin.end(cmd);
     
     k.once('exit', code => {
-      
-      if (code > 0) {
-        log.error(`Could not run "${cmd}" at path:`, dir);
-        return cb({code});
-      }
+  
+      result.exitCode = code;
       
       stdout = String(stdout).trim();
-      result.exitCode = code;
+      
       
       if (stdout.match(/Your branch is up-to-date with/ig) || stdout.match(/Your branch is up to date with/ig)) {
         log.debug('Branch is up to date with remote:', dir);
@@ -97,6 +138,7 @@ export const getStatusOfIntegrationBranch = function (dir: string, remote: strin
       let err = null;
       
       if (code > 0) {
+        log.error(`Could not run "${cmd}" at path:`, dir);
         err = {code, message: `Could not run the following command: ${chalk.bold(cmd)}`};
       }
       
@@ -108,13 +150,11 @@ export const getStatusOfIntegrationBranch = function (dir: string, remote: strin
   
 };
 
-export const getStatusOfCurrentBranch = function (dir: string, remote: string, cb: EVCb<GitStatusData>) {
+export const getStatusOfCurrentBranch = (dir: string, remote: string, cb: EVCb<GitStatusData>): void => {
   
   getQueue(dir).push(cb => {
     
-    const k = cp.spawn('bash', [], {
-      cwd: dir
-    });
+    const k = cp.spawn('bash');
     
     const result = {
       exitCode: null as number,
@@ -131,8 +171,7 @@ export const getStatusOfCurrentBranch = function (dir: string, remote: string, c
       stdout += String(d || '').trim();
     });
     
-    const cmd = `git status -v |  tr '\r\n' ' '`;  // replace newline chars with space
-    
+    const cmd = `cd "${dir}" && ( git status -v |  tr '\r\n' ' ' )`;  // replace newline chars with space
     k.stdin.end(cmd);
     
     k.once('exit', code => {
@@ -183,15 +222,13 @@ export interface BranchNameData {
   branchName: string
 }
 
-export const getCurrentBranchName = function (dir: string, remote: string, cb: EVCb<BranchNameData>) {
+export const getCurrentBranchName = (dir: string, remote: string, cb: EVCb<BranchNameData>): void => {
   
   getQueue(dir).push(cb => {
     
-    const k = cp.spawn('bash', [], {
-      cwd: dir
-    });
+    const k = cp.spawn('bash');
     
-    const cmd = `git rev-parse --abbrev-ref HEAD`;
+    const cmd = `cd "${dir}" && git rev-parse --abbrev-ref HEAD`;
     k.stdin.end(cmd);
     
     const result = {
@@ -228,15 +265,13 @@ export interface GitRemoteData {
   gitRemoteURL: string
 }
 
-export const getRemoteURL = function (dir: string, remote: string, cb: EVCb<GitRemoteData>) {
+export const getRemoteURL = (dir: string, remote: string, cb: EVCb<GitRemoteData>): void => {
   
   getQueue(dir).push(cb => {
     
-    const k = cp.spawn('bash', [], {
-      cwd: dir
-    });
+    const k = cp.spawn('bash');
     
-    const cmd = `git remote get-url origin`;
+    const cmd = `cd "${dir}" && git remote get-url origin`;
     k.stdin.end(cmd);
     
     const result = {
@@ -274,16 +309,15 @@ export interface AllLocalBranches {
   results: Array<{ branch: string, value: string }>
 }
 
-export const allLocalBranches = function (dir: string, remote: string, cb: EVCb<AllLocalBranches>) {
+export const allLocalBranches = (dir: string, remote: string, cb: EVCb<AllLocalBranches>): void => {
   
   getQueue(dir).push(cb => {
     
-    const k = cp.spawn('bash', [], {
-      cwd: dir
-    });
+    const k = cp.spawn('bash')
     
     const cmd = [
       `set -e`,
+      `cd "${dir}"`,
       `npp_install_json_stdio`,
       `git fetch origin`,
       `git branch -l | tr -d " *" | while read branch; do`,
@@ -334,15 +368,13 @@ export interface GitStashShow {
   gitStash: string
 }
 
-export const getStash = function (dir: string, name: string, cb: EVCb<GitStashShow>) {
+export const getStash = (dir: string, name: string, cb: EVCb<GitStashShow>): void => {
   
   getQueue(dir).push(cb => {
     
-    const k = cp.spawn('bash', [], {
-      cwd: dir
-    });
+    const k = cp.spawn('bash');
     
-    const cmd = `git stash show | cat`;  // always exit with 0
+    const cmd = `cd "${dir}" && git stash show | cat`;  // always exit with 0
     k.stdin.end(cmd);
     
     const result = <GitStashShow> {
