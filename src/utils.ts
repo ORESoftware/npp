@@ -11,6 +11,7 @@ import {NPMRegistryShasums} from './npm-helpers';
 import async = require('async');
 import * as fs from 'fs';
 import * as assert from "assert";
+import log from './logger';
 
 export const flattenDeep = function (a: Array<any>): Array<any> {
   return a.reduce((acc, val) => Array.isArray(val) ? acc.concat(flattenDeep(val)) : acc.concat(val), []);
@@ -117,7 +118,8 @@ export const readPackageJSONandNPP = function (dir: string, cb: EVCb<JSONData>) 
   }, (err, results) => {
     
     if (err) {
-      return cb({err, message: `Could not read package.json or .npp.json file.`}, result);
+      log.error(err);
+      return cb({err, message: `Could not read package.json or .npp.json file, at dir: "${dir}".`}, result);
     }
     
     try {

@@ -5,7 +5,7 @@ npp(){
 
   if ! type -f npp &> /dev/null || ! which npp &> /dev/null; then
 
-    echo -e "Installing the '@oresoftware/r2g' NPM package globally..." >&2;
+    echo -e "Installing the '@oresoftware/npp' NPM package globally..." >&2;
 
     npm i -s -g '@oresoftware/npp' || {
 

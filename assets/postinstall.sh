@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 
-
-
 mkdir -p "$HOME/.oresoftware/bash" || {
     echo "could not create oresoftware/bash dir."
     exit 1;
 }
 
+mkdir -p "$HOME/.oresoftware/bin" || {
+    echo "could not create '$HOME/.oresoftware/bin' dir."
+    exit 1;
+}
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
 
@@ -21,12 +23,12 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
 fi
 
 
-cat "assets/shell.sh" > "$HOME/.oresoftware/bash/r2g.sh" || {
-  echo "Could not create oresoftware/bash/r2g.sh file."
+cat "assets/shell.sh" > "$HOME/.oresoftware/bash/npp.sh" || {
+  echo "Could not create '$HOME/.oresoftware/bash/npp.sh' file."
   exit 1;
 }
 
 cat "assets/completion.sh" > "$HOME/.oresoftware/bash/npp.completion.sh" || {
-  echo "could not create oresoftware/bash/r2g.completion.sh file."
+  echo "could not create '$HOME/.oresoftware/bash/npp.completion.sh' file."
   exit 1;
 }

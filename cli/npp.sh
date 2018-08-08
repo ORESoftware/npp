@@ -3,12 +3,16 @@
 ### we use this bash file instead of a dist/.js file, because of this problem:
 ### https://stackoverflow.com/questions/50616253/how-to-resolve-chicken-egg-situation-with-tsc-and-npm-install
 
-dir_name="$(dirname "$0")"
-read_link="$(readlink "$0")";
-exec_dir="$(dirname $(dirname "$read_link"))";
-my_path="$dir_name/$exec_dir";
-basic_path="$(cd $(dirname ${my_path}) && pwd)/$(basename ${my_path})"
-commands="$basic_path/dist/commands"
+project_root="";
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    project_root="$(dirname $(dirname $("$HOME/.oresoftware/bin/realpath" $0)))";
+
+else
+    project_root="$(dirname $(dirname $(realpath $0)))";
+fi
+
+commands="$project_root/dist/commands"
 
 
 ### there is an extradinary amount of magic required to get a bash script

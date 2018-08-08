@@ -242,7 +242,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
               npp = require(nppPath);
             }
             catch (err) {
-              log.warn('no .npp.json file at path => ', item);
+              log.warn('no .npp.json file in this dir => ', chalk.magenta(dir));
             }
             
             let version = parsedPkgJSON.version;
@@ -308,7 +308,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                 getRepoDir(cb: EVCb<string>){
                   git.getGitRepoPath(dir,'<remote>', (err, v) => {
                     if(!err && !(v.path && typeof v.path === 'string')){
-                      err = new Error('Could not find corresponding git repo for dir:' + dir);
+                      err = new Error('Could not find corresponding git repo for dir: ' + chalk.magenta.bold(dir));
                     }
                     cb(err, v && v.path);
                   });
