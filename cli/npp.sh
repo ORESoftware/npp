@@ -20,7 +20,7 @@ commands="$basic_path/dist/commands"
 
 
 first_arg="$1";
-shift 1;
+
 
 # make sure json_stdio is installed
 npp_install_json_stdio
@@ -29,10 +29,12 @@ npp_install_json_stdio
 if [ "$first_arg" == "view" ] || [ "$first_arg" == "v" ]; then
 
   # view table of projects
+  shift 1;
   node "$commands/view" "$@"
 
 elif [ "$first_arg" == "publish" ] || [ "$first_arg" == "p" ]; then
 
+  shift 1;
   node "$commands/publish" "$@"
 
 else

@@ -1,6 +1,6 @@
 'use strict';
 
-const options = [
+export default [
   
   {
     names: ['version', 'vn'],
@@ -45,9 +45,6 @@ const options = [
 
 ];
 
-export default options;
-
-export type Opts = typeof options;
 
 export interface ViewOpts {
   help: boolean,

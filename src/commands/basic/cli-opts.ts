@@ -1,9 +1,9 @@
 'use strict';
 
 export default [
-
+  
   {
-    names: ['version','vn'],
+    names: ['version', 'vn'],
     type: 'bool',
     help: 'Print tool version and exit.'
   },
@@ -21,6 +21,19 @@ export default [
     names: ['allow-unknown'],
     type: 'bool',
     help: 'Allow unknown arguments to the command line.',
+  },
+  {
+    names: ['bash-completion', 'completion'],
+    type: 'bool',
+    help: 'Generate bash completion code (written to stdout).',
   }
 
 ]
+
+export interface BasicCliOpts {
+  bash_completion: boolean,
+  allow_unknown: boolean,
+  verbosity: number,
+  help: boolean,
+  version: string
+}
