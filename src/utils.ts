@@ -119,6 +119,7 @@ export const readPackageJSONandNPP = function (dir: string, cb: EVCb<JSONData>) 
     
     if (err) {
       log.error(err);
+      log.error(chalk.redBright('You may not have an .npp.json file in your integration branch.'));
       return cb({err, message: `Could not read package.json or .npp.json file, at dir: "${dir}".`}, result);
     }
     
