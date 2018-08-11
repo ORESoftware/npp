@@ -26,7 +26,7 @@ export enum GitStatus {
 }
 
 export interface BranchInfo {
-  name: string, // the package.json name (might differ across different git branches)
+  packageName: string, // the package.json packageName (might differ across different git branches)
   packageJSON: any,
   nppJSON: any,
   shasumMatch: boolean,
@@ -41,6 +41,7 @@ export interface SearchResult {
   gitStashString: string,
   allLocalBranchesString: string,
   currentBranch: BranchInfo,
+  masterBranch: Partial<BranchInfo>,
   currentBranchString: string,
   integrationBranch: BranchInfo,
   integrationBranchString: string,
@@ -231,7 +232,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
             let name = parsedPkgJSON.name;
             
             if (!packages[name]) {
-              log.debug('The following name was not in the packages map from .npp.json:', name);
+              log.debug('The following packageName was not in the packages map from .npp.json:', name);
               return cb(null);
             }
             
@@ -250,7 +251,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
             // let notPublishable = parsed.npp && parsed.npp.publishable === false;
             
             if (npp === null && publishable !== true) {
-              log.warn('Skipping the following package name:', name, 'at path:', dir);
+              log.warn('Skipping the following package packageName:', name, 'at path:', dir);
               log.warn('This package was skipped because it either did not have an .npp.json file, or npp.publishable in package.json was not set to true');
               log.warn('Here is npp in package.json:', parsedPkgJSON.npp);
               log.warn('Here is publishable:', publishable);
@@ -264,13 +265,13 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
               log.warn('new place => ', chalk.blueBright(item));
               
               return cb(
-                new Error('The following requested package name exists in more than 1 location on disk, and docker.r2g does not know which one to use ... ' +
+                new Error('The following requested package packageName exists in more than 1 location on disk, and docker.r2g does not know which one to use ... ' +
                   chalk.magentaBright.bold(util.inspect({name: name, locations: [map[name], item]})))
               )
             }
             
             if (!(parsedPkgJSON && parsedPkgJSON.name && parsedPkgJSON.version)) {
-              return cb(new Error('Project at the following path is missing either "name" or "version" in package.json => ' + item));
+              return cb(new Error('Project at the following path is missing either "packageName" or "version" in package.json => ' + item));
             }
             
             if (npp && npp.searchRoots) {
@@ -301,14 +302,14 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                       npmVersion: ''
                     });
                   }
-  
+                  
                   npmh.getLatestVersionFromNPMRegistry(dir, name, cb);
                 },
-              
-                getRepoDir(cb: EVCb<string>){
-                  git.getGitRepoPath(dir,'<remote>', (err, v) => {
-                    if(!err && !(v.path && typeof v.path === 'string')){
-                      log.error(err,v);
+                
+                getRepoDir(cb: EVCb<string>) {
+                  git.getGitRepoPath(dir, '<remote>', (err, v) => {
+                    if (!err && !(v.path && typeof v.path === 'string')) {
+                      log.error(err, v);
                       err = 'Could not find corresponding git repo for dir: ' + chalk.magenta.bold(dir);
                     }
                     cb(err, v && v.path);
@@ -323,9 +324,16 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                   git.getCurrentBranchName(getRepoDir, '<remote>', cb);
                 },
                 
-                getStatusOfIntegrationBranch(getRepoDir: string, checkGitStatus: any, getLocalDistDataCurrentBranch: any, cb: EVCb<git.GitStatusData>) {
+                getStatusOfIntegrationBranch(
+                  getRepoDir: string,
+                  checkGitStatus: any,
+                  getLocalDistDataCurrentBranch: any,
+                  readPackageJsonAndNPP: nppUtils.JSONData,
+                  cb: EVCb<git.GitStatusData>) {
+                  
                   // note we need to check the status of the current branch before checking out the integration branch
-                  git.getStatusOfIntegrationBranch(getRepoDir, '<remote>', 'remotes/origin/master', cb);
+                  const ib = readPackageJsonAndNPP.nppJSON.vcsInfo.integration;
+                  git.getStatusOfIntegrationBranch(getRepoDir, '<remote>', ib , cb);
                 },
                 
                 getRegistryDistData(cb: EVCb<npmh.DistDataResult>) {
@@ -344,8 +352,24 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                   npmh.getNPMTarballData(dir, name, cb)
                 },
                 
-                readPackageJsonAndNPP(getStatusOfIntegrationBranch: any, cb: EVCb<nppUtils.JSONData>) {
-                  nppUtils.readPackageJSONandNPP(dir, cb);
+                readPackageJsonAndNPP(cb: EVCb<nppUtils.JSONData>) {
+                  nppUtils.readPackageJSONandNPP(dir, (err,val) => {
+                    
+                    if(err){
+                      return cb(err);
+                    }
+                    
+                    try {
+                      assert.strictEqual(typeof val.nppJSON.vcsInfo.master, 'string');
+                      assert.strictEqual(typeof val.nppJSON.vcsInfo.integration, 'string');
+                    }
+                    catch (err) {
+                      return cb(err);
+                    }
+                    
+                    cb(null, val);
+                    
+                  });
                 },
                 
                 checkMergedForAllLocalBranches(getRepoDir: string, cb: EVCb<git.AllLocalBranches>) {
@@ -375,9 +399,9 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                 const integrationBranchJSON = results.readPackageJsonAndNPP as nppUtils.JSONData;
                 const allLocalBranches = results.checkMergedForAllLocalBranches as git.AllLocalBranches;
                 let gitStash = (results.showGitStash as git.GitStashShow).gitStash || '(no stdout/stderr)';
-  
-                if(gitStash.length > 250){
-                  gitStash = gitStash.slice(0,300) + '...(truncated).';
+                
+                if (gitStash.length > 250) {
+                  gitStash = gitStash.slice(0, 300) + '...(truncated).';
                 }
                 
                 // log.debug('local dist data:', localDistDataCurrentBranch);
@@ -411,13 +435,14 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                   log.warn(err.message);
                 }
                 
-                log.info('added the following package name to the map:', name);
+                log.info('added the following package packageName to the map:', name);
                 
                 const currentBranchName = results.getBranchName.branchName;
                 const currentBranchClean = results.checkGitStatus.workingDirectoryClean;
                 const currentBranchUpToDate = results.checkGitStatus.upToDateWithRemote;
                 const integrationBranchClean = results.getStatusOfIntegrationBranch.workingDirectoryClean;
                 const integrationBranchUpToDate = results.getStatusOfIntegrationBranch.upToDateWithRemote;
+                const ib = results.readPackageJsonAndNPP.nppJSON.vcsInfo.integration;
                 
                 map[name] = {
                   name,
@@ -440,7 +465,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                   ].join(',\n'),
                   
                   currentBranch: {
-                    name,
+                    packageName: name,
                     packageJSON: parsedPkgJSON,
                     nppJSON: npp || null,
                     shasumMatch: shasumMatchCurrentBranch,
@@ -451,20 +476,24 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                   },
                   
                   integrationBranchString: [
-                    'remotes/origin/master',
+                    ib,
                     integrationBranchVersion,
                     shasumMatchIntegrationBranch ? chalk.magenta('(shasum matched)') : '(shasum not matched)',
                     integrationBranchClean ? '(clean status)' : chalk.red('(unclean status)'),
                     integrationBranchUpToDate ? '(up-to-date)' : chalk.red('(not up-to-date with remote)')
                   ].join(',\n'),
                   
+                  masterBranch: {
+                    branchName: integrationBranchJSON.nppJSON.vcsInfo.master,
+                  },
+                  
                   integrationBranch: {
-                    name: integrationBranchPackageName,
+                    packageName: integrationBranchPackageName,
                     packageJSON: integrationBranchJSON.packageJSON,
                     nppJSON: integrationBranchJSON.nppJSON,
                     shasumMatch: shasumMatchIntegrationBranch,
                     localVersion: integrationBranchVersion,
-                    branchName: 'remotes/origin/master',
+                    branchName: ib,
                     workingDirectoryClean: integrationBranchClean,
                     upToDateWithRemote: integrationBranchUpToDate,
                   },

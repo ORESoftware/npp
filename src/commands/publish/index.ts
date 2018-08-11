@@ -275,7 +275,7 @@ async.autoInject({
         log.error(e.message);
         log.error('Looks like one of your projects has an invalid semver version in package.json.');
         log.error('You should mitigate that now, and then restart this process later.');
-        log.error('The package name with the problem is:', chalk.magenta(name));
+        log.error('The package packageName with the problem is:', chalk.magenta(name));
         log.error('The path to this package is:', chalk.magenta(path));
         process.exit(1);
       };
@@ -424,7 +424,9 @@ async.autoInject({
       const publishArray = choosePublishingOrder.slice(0);
       
       async.mapLimit(publishArray, 3, (v, cb) => {
-          
+    
+          const ib = v.integrationBranch.branchName;
+    
           const k = cp.spawn('bash');
           log.debug('Checking out release branch in path:', v.path);
           
@@ -450,13 +452,12 @@ async.autoInject({
           const cmd = [
             `cd ${v.path}`,
             `git fetch origin master`, // fetch the integration branch first
-            `git branch --no-track "${releaseName}" "remotes/origin/master"`, //  `git checkout "${releaseName}" HEAD`,
+            `git branch --no-track "${releaseName}" "${ib}"`, //  `git checkout "${releaseName}" HEAD`,
             `git checkout "${releaseName}"`
           ]
             .join(' && ');
           
           k.stderr.pipe(pt(chalk.yellow.bold(`[${v.name}]: `))).pipe(process.stderr);
-          
           k.stdin.end(cmd);
           
           k.once('exit', code => {
@@ -546,8 +547,8 @@ async.autoInject({
         
         const tempBranch = v.tempFeatureBranch = `${process.env.USER}/npp_tool/feature/${String(Date.now()).slice(0, -3)}`;
         const masterCopy = `npp_tool/master_copy`;
-        const masterBranch = 'remotes/origin/master';
-        const integrationBranch = 'remotes/origin/master';
+        const masterBranch = v.masterBranch.branchName; // 'remotes/origin/master';
+        const integrationBranch = v.integrationBranch.branchName; // 'remotes/origin/master';
         
         let subshell = [
           `git fetch origin`,
@@ -672,13 +673,12 @@ async.autoInject({
     
     publish(areYouReadyToPublish: any, modifyReleaseBranches: Array<SearchResult>, cb: EVCb<Array<'foo'>>) {
       
-      const publish = (releaseName: string, tempBranch: string, pth: string, name: string, cb: EVCb<'foo'>) => {
+      const publish = (releaseName: string, tempBranch: string, pth: string, name: string, fullIntegrationBranch: string, cb: EVCb<'foo'>) => {
         
         console.log();
         const k = cp.spawn('bash');
         
-        const integrationBranch = 'master';
-        const integrationBranchRemote = 'remotes/origin/master';
+        const integrationBranch =  String(fullIntegrationBranch).split('/').map(v => String(v || '')).filter(Boolean).pop();  // 'master';
         
         let subshell = [
           `git fetch origin ${integrationBranch}`,
@@ -688,7 +688,7 @@ async.autoInject({
         ]
           .join(' && ');
         
-        const safeCheckout = ` git checkout "${tempBranch}" -f; git merge ${integrationBranchRemote}`;
+        const safeCheckout = ` git checkout "${tempBranch}" -f; git merge ${fullIntegrationBranch}`;
         
         // always checkout the integration branch again, at the end
         const cmd = `cd ${pth} && ( ${subshell} ) || { echo "Command failed"; ${safeCheckout}; exit 1; } && ${safeCheckout};`;
@@ -725,12 +725,13 @@ async.autoInject({
         console.log();
         const releaseName = v.releaseBranchName;
         const tempBranch = v.tempFeatureBranch;
+        const fullMasterBranch = v.masterBranch.branchName;
         const k = cp.spawn('bash');
         
         const cmd = [
           `cd ${v.path}`,
-          `git fetch origin master`,
-          `npp_check_merge "${releaseName}" "remotes/origin/master"`,
+          `git fetch origin`,
+          `npp_check_merge "${releaseName}" "${fullMasterBranch}"`,
         ]
           .join(' && ');
         
@@ -771,7 +772,7 @@ async.autoInject({
           }
           
           const runPublish = () => {
-            publish(releaseName, tempBranch, v.path, v.name, cb);
+            publish(releaseName, tempBranch, v.path, v.name, v.integrationBranch.branchName, cb);
           };
           
           if (merged) {

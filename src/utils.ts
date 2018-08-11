@@ -1,6 +1,6 @@
 'use strict';
 
-import {EVCb} from './index';
+import {EVCb, NppJSONConf} from './index';
 import * as cp from "child_process";
 import chalk from 'chalk';
 import shortid = require("shortid");
@@ -95,7 +95,7 @@ export const getLocalTarballDistData = function (dir: string, name: string, cb: 
 
 export interface JSONData {
   packageJSON: any,
-  nppJSON: any
+  nppJSON: NppJSONConf
 }
 
 export const readPackageJSONandNPP = function (dir: string, cb: EVCb<JSONData>) {
