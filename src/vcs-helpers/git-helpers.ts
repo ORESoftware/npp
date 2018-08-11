@@ -48,7 +48,7 @@ export const getGitRepoPath = function (dir: string, remote: string, cb: EVCb<Gi
       };
       
       k.stderr.setEncoding('utf8');
-      k.stderr.pipe(pt(`[${dir}]: `)).pipe(process.stderr);
+      k.stderr.pipe(pt(chalk.yellow.bold(`${dir}: `))).pipe(process.stderr);
       
       k.stdout.on('data', d => {
         result.path += String(d || '').trim();
