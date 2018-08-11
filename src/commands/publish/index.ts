@@ -457,7 +457,7 @@ async.autoInject({
           ]
             .join(' && ');
           
-          k.stderr.pipe(pt(chalk.yellow.bold(`[${v.name}]: `))).pipe(process.stderr);
+          k.stderr.pipe(pt(chalk.yellow.bold(`${v.name}: `))).pipe(process.stderr);
           k.stdin.end(cmd);
           
           k.once('exit', code => {
@@ -572,7 +572,7 @@ async.autoInject({
         const cmd = `cd ${v.path} && ( ${subshell} ) || { echo "Command failed"; ${safeCheckout}; exit 1; } && ${safeCheckout};`;
         
         k.stdin.end(cmd);
-        k.stderr.pipe(pt(chalk.yellow.bold(`[${v.name}]: `))).pipe(process.stderr);
+        k.stderr.pipe(pt(chalk.yellow.bold(`${v.name}: `))).pipe(process.stderr);
         
         k.once('exit', code => {
           

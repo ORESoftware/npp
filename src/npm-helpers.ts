@@ -32,7 +32,7 @@ export const getLatestVersionFromNPMRegistry = function (dir: string, name: stri
   };
   
   k.stderr.setEncoding('utf8');
-  k.stderr.pipe(pt(chalk.yellow(`[ ${cmd} ]: `))).pipe(process.stderr);
+  k.stderr.pipe(pt(chalk.yellow.bold(`( ${cmd} ): `))).pipe(process.stderr);
   
   k.stdout.on('data', d => {
     result.npmVersion = result.npmVersion += String(d || '').trim();
@@ -81,7 +81,7 @@ export const getDistDataFromNPMRegistry = function (dir: string, name: string, c
   };
   
   k.stderr.setEncoding('utf8');
-  k.stderr.pipe(pt(chalk.yellow(`[ ${cmd} ]: `))).pipe(process.stderr);
+  k.stderr.pipe(pt(chalk.yellow.bold(`(${cmd}): `))).pipe(process.stderr);
   
   let stdout = '';
   

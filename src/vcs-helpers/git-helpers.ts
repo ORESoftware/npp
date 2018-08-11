@@ -102,7 +102,7 @@ export const getStatusOfIntegrationBranch = (dir: string, remote: string, integr
     let stdout = '';
     
     k.stderr.setEncoding('utf8');
-    k.stderr.pipe(pt(`[${dir}]: `)).pipe(process.stderr);
+    k.stderr.pipe(pt(chalk.yellow.bold(`${dir}: `))).pipe(process.stderr);
     
     k.stdout.pipe(stdio.createParser()).on(stdio.stdEventName, d => {
       stdout = String(d || '');
@@ -178,7 +178,7 @@ export const getStatusOfCurrentBranch = (dir: string, remote: string, cb: EVCb<G
     let stdout = '';
     
     k.stderr.setEncoding('utf8');
-    k.stderr.pipe(pt(`[${dir}]: `)).pipe(process.stderr);
+    k.stderr.pipe(pt(chalk.yellow.bold(`${dir}: `))).pipe(process.stderr);
     
     k.stdout.on('data', d => {
       stdout += String(d || '').trim();
@@ -250,7 +250,7 @@ export const getCurrentBranchName = (dir: string, remote: string, cb: EVCb<Branc
     };
     
     k.stderr.setEncoding('utf8');
-    k.stderr.pipe(pt(`[${dir}]:`)).pipe(process.stderr);
+    k.stderr.pipe(pt(chalk.yellow.bold(`${dir}: `))).pipe(process.stderr);
     
     k.stdout.on('data', d => {
       result.branchName = result.branchName += String(d || '').trim();
@@ -293,7 +293,7 @@ export const getRemoteURL = (dir: string, remote: string, cb: EVCb<GitRemoteData
     };
     
     k.stderr.setEncoding('utf8');
-    k.stderr.pipe(pt(`[${dir}]: `)).pipe(process.stderr);
+    k.stderr.pipe(pt(chalk.yellow.bold(`${dir}: `))).pipe(process.stderr);
     
     k.stdout.on('data', d => {
       result.gitRemoteURL = result.gitRemoteURL += String(d || '').trim();
@@ -346,7 +346,7 @@ export const deleteLocalBranches = (dir: string, branches: AllLocalBranches, rem
     };
     
     k.stderr.setEncoding('utf8');
-    k.stderr.pipe(pt(`[${dir}]: `)).pipe(process.stderr);
+    k.stderr.pipe(pt(chalk.yellow.bold(`${dir}: `))).pipe(process.stderr);
     
     k.once('exit', code => {
       
@@ -401,7 +401,7 @@ export const allLocalBranches = (dir: string, remote: string, ib: string, cb: EV
     };
     
     k.stderr.setEncoding('utf8');
-    k.stderr.pipe(pt(`[${dir}]: `)).pipe(process.stderr);
+    k.stderr.pipe(pt(chalk.yellow.bold(`${dir}: `))).pipe(process.stderr);
     
     k.stdout.pipe(stdio.createParser()).on(stdio.stdEventName, d => {
       res.results.push(d);
@@ -449,7 +449,7 @@ export const getStash = (dir: string, name: string, cb: EVCb<GitStashShow>): voi
     };
     
     k.stderr.setEncoding('utf8');
-    k.stderr.pipe(pt(chalk.yellow(`running git stash show for '${name}': `))).pipe(process.stderr);
+    k.stderr.pipe(pt(`${chalk.yellow(`running ${chalk.bold(`git stash show`)}  for '${name}': `)}`)).pipe(process.stderr);
     
     k.stdout.on('data', v => {
       result.gitStash += String(v || '');
