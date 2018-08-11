@@ -35,9 +35,10 @@ export interface GitRepoPath {
 
 export const getGitRepoPath = function (dir: string, remote: string, cb: EVCb<GitRepoPath>) {
   
-  getQueue(dir).push(cb => {
-    
+  
     gitRepoQueue.push(cb => {
+  
+      getQueue(dir).push(cb => {
       
       const k = cp.spawn('bash');
       
@@ -54,7 +55,10 @@ export const getGitRepoPath = function (dir: string, remote: string, cb: EVCb<Gi
       });
       
       const cmd = `cd "${dir}" && git rev-parse --show-toplevel`;
-      k.stdin.end(cmd);
+      
+      setTimeout(() => {
+        k.stdin.end(cmd);
+      }, 10);
       
       k.once('exit', code => {
         
