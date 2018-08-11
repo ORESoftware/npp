@@ -18,7 +18,7 @@ const queues = new Map<string, async.AsyncQueue<Task>>();
 
 const getQueue = (dir: string): async.AsyncQueue<Task> => {
   
-  if(!dir){
+  if (!dir) {
     throw new Error('Empty string passed to ' + getQueue.name);
   }
   
@@ -35,39 +35,43 @@ export interface GitRepoPath {
 
 export const getGitRepoPath = function (dir: string, remote: string, cb: EVCb<GitRepoPath>) {
   
-  gitRepoQueue.push(cb => {
+  getQueue(dir).push(cb => {
     
-    const k = cp.spawn('bash');
-    
-    const result = <GitRepoPath>{
-      exitCode: null as number,
-      path: ''
-    };
-    
-    k.stderr.setEncoding('utf8');
-    k.stderr.pipe(pt(`[${dir}]: `)).pipe(process.stderr);
-    
-    k.stdout.on('data', d => {
-      result.path += String(d || '').trim();
-    });
-    
-    const cmd = `cd "${dir}" && git rev-parse --show-toplevel`;
-    k.stdin.end(cmd);
-    
-    k.once('exit', code => {
+    gitRepoQueue.push(cb => {
       
-      result.exitCode = code;
-      let err = null;
+      const k = cp.spawn('bash');
       
-      if (code > 0) {
-        log.error(`Could not run "${cmd}" at path:`, dir);
-        err = {code, message: `Could not run the following command: ${chalk.bold(cmd)}`};
-      }
+      const result = <GitRepoPath>{
+        exitCode: null as number,
+        path: ''
+      };
       
-      result.path = String(result.path || '').trim();
-      cb(err, result);
+      k.stderr.setEncoding('utf8');
+      k.stderr.pipe(pt(`[${dir}]: `)).pipe(process.stderr);
       
-    });
+      k.stdout.on('data', d => {
+        result.path += String(d || '').trim();
+      });
+      
+      const cmd = `cd "${dir}" && git rev-parse --show-toplevel`;
+      k.stdin.end(cmd);
+      
+      k.once('exit', code => {
+        
+        result.exitCode = code;
+        let err = null;
+        
+        if (code > 0) {
+          log.error(`Could not run "${cmd}" at path:`, dir);
+          err = {code, message: `Could not run the following command: ${chalk.bold(cmd)}`};
+        }
+        
+        result.path = String(result.path || '').trim();
+        cb(err, result);
+        
+      });
+      
+    }, cb);
     
   }, cb);
   
@@ -309,7 +313,6 @@ export const getRemoteURL = (dir: string, remote: string, cb: EVCb<GitRemoteData
   
 };
 
-
 export interface DeletedLocalBranches {
   exitCode: number,
   deleted: Array<string>
@@ -322,14 +325,14 @@ export const deleteLocalBranches = (dir: string, branches: AllLocalBranches, rem
     const k = cp.spawn('bash');
     
     const deletions = branches.results.filter(v => v.value === 'merged').map(v => {
-       return `git branch -d "${v.branch}"`
+      return `git branch -d "${v.branch}"`
     });
     
-    const deletionsStr = deletions.join('; ') + '; exit 0; ' ;
+    const deletionsStr = deletions.join('; ') + '; exit 0; ';
     
     const cmd = [
       `cd "${dir}"`,
-       `${deletionsStr}`
+      `${deletionsStr}`
     ].join(' && ');
     
     k.stdin.end(cmd);
@@ -350,7 +353,7 @@ export const deleteLocalBranches = (dir: string, branches: AllLocalBranches, rem
       }
       
       try {
-        res.deleted =  deletions;
+        res.deleted = deletions;
         cb(null, res);
       }
       catch (err) {
@@ -362,7 +365,6 @@ export const deleteLocalBranches = (dir: string, branches: AllLocalBranches, rem
   }, cb);
   
 };
-
 
 export interface AllLocalBranches {
   exitCode: number,
