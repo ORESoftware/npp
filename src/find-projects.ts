@@ -6,10 +6,8 @@ import async = require('async');
 import log from "./logger";
 import * as util from "util";
 import chalk from "chalk";
-
 import * as git from "./vcs-helpers/git-helpers";
 import * as npmh from "./npm-helpers";
-
 import {EVCb, NppJSONConf} from "./index";
 import * as nppUtils from "./utils";
 import {mapPaths} from "./map-paths";
