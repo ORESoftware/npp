@@ -14,6 +14,7 @@ import {EVCb, NppJSONConf} from "./index";
 import * as nppUtils from "./utils";
 import {mapPaths} from "./map-paths";
 import * as assert from 'assert';
+import {AllLocalBranches} from './vcs-helpers/git-helpers';
 
 export interface Packages {
   [key: string]: boolean | string
@@ -316,7 +317,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                   });
                 },
                 
-                checkGitStatus(getRepoDir: string, cb: EVCb<git.GitStatusData>) {
+                checkGitStatus(getRepoDir: string, getLocalDistDataCurrentBranch: any, cb: EVCb<git.GitStatusData>) {
                   git.getStatusOfCurrentBranch(getRepoDir, '<remote>', cb);
                 },
                 
@@ -333,7 +334,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                   
                   // note we need to check the status of the current branch before checking out the integration branch
                   const ib = readPackageJsonAndNPP.nppJSON.vcsInfo.integration;
-                  git.getStatusOfIntegrationBranch(getRepoDir, '<remote>', ib , cb);
+                  git.getStatusOfIntegrationBranch(getRepoDir, '<remote>', ib, cb);
                 },
                 
                 getRegistryDistData(cb: EVCb<npmh.DistDataResult>) {
@@ -352,10 +353,19 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                   npmh.getNPMTarballData(dir, name, cb)
                 },
                 
+                deleteLocalBranches(checkMergedForAllLocalBranches: AllLocalBranches, cb: EVCb<git.DeletedLocalBranches>) {
+                  
+                  if(!opts.delete){
+                    return process.nextTick(cb, null, []);
+                  }
+                  
+                  git.deleteLocalBranches(dir, checkMergedForAllLocalBranches, '<remote>', cb);
+                },
+                
                 readPackageJsonAndNPP(cb: EVCb<nppUtils.JSONData>) {
-                  nppUtils.readPackageJSONandNPP(dir, (err,val) => {
+                  nppUtils.readPackageJSONandNPP(dir, (err, val) => {
                     
-                    if(err){
+                    if (err) {
                       return cb(err);
                     }
                     
@@ -372,8 +382,9 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                   });
                 },
                 
-                checkMergedForAllLocalBranches(getRepoDir: string, cb: EVCb<git.AllLocalBranches>) {
-                  git.allLocalBranches(getRepoDir, name, cb);
+                checkMergedForAllLocalBranches(getRepoDir: string, readPackageJsonAndNPP: nppUtils.JSONData, cb: EVCb<git.AllLocalBranches>) {
+                  const ib = readPackageJsonAndNPP.nppJSON.vcsInfo.integration;
+                  git.allLocalBranches(getRepoDir, name, ib, cb);
                 },
                 
                 showGitStash(getRepoDir: string, cb: EVCb<git.GitStashShow>) {

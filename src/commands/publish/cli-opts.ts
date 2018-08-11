@@ -18,6 +18,11 @@ const options =  [
     help: 'Verbosity level, 1-3 inclusive.'
   },
   {
+    names: ['delete', 'D'],
+    type: 'bool',
+    help: 'Delete merged branches.'
+  },
+  {
     names: ['view-npm-registry','view-registry'],
     type: 'bool',
     help: 'See/view data from the NPM registry.'

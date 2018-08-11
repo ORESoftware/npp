@@ -28,6 +28,11 @@ export default [
     help: 'See data from the NPM registry.'
   },
   {
+    names: ['delete', 'D'],
+    type: 'bool',
+    help: 'Delete merged branches.'
+  },
+  {
     names: ['view-git-stash', 'view-stash'],
     type: 'bool',
     help: 'See results from the "git stash show" command for each git repo.'

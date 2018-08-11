@@ -56,7 +56,7 @@ export const getLocalTarballDistData = function (dir: string, name: string, cb: 
   
   const cmd = [
     `mkdir -p "${p}"`,
-    `rsync -r --exclude=node_modules "${dir}" "${p}"`,
+    `rsync -r --exclude='node_modules' --exclude='.git' "${dir}" "${p}"`,
     `cd "${p}/${bn}"`,
     `tgz=$(npm pack --loglevel=warn)`,
     `json_stdio "$(sha1sum $tgz)"`,

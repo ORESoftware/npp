@@ -17,6 +17,11 @@ const gitRepoQueue = async.queue<Task, any>((task, cb) => task(cb), 1);
 const queues = new Map<string, async.AsyncQueue<Task>>();
 
 const getQueue = (dir: string): async.AsyncQueue<Task> => {
+  
+  if(!dir){
+    throw new Error('Empty string passed to ' + getQueue.name);
+  }
+  
   if (!queues.has(dir)) {
     queues.set(dir, async.queue<Task, any>((task, cb) => task(cb), 1));
   }
@@ -304,16 +309,71 @@ export const getRemoteURL = (dir: string, remote: string, cb: EVCb<GitRemoteData
   
 };
 
+
+export interface DeletedLocalBranches {
+  exitCode: number,
+  deleted: Array<string>
+}
+
+export const deleteLocalBranches = (dir: string, branches: AllLocalBranches, remote: string, cb: EVCb<DeletedLocalBranches>): void => {
+  
+  getQueue(dir).push(cb => {
+    
+    const k = cp.spawn('bash');
+    
+    const deletions = branches.results.filter(v => v.value === 'merged').map(v => {
+       return `git branch -d "${v.branch}"`
+    });
+    
+    const deletionsStr = deletions.join('; ') + '; exit 0; ' ;
+    
+    const cmd = [
+      `cd "${dir}"`,
+       `${deletionsStr}`
+    ].join(' && ');
+    
+    k.stdin.end(cmd);
+    
+    const res = <DeletedLocalBranches>{
+      exitCode: null as number
+    };
+    
+    k.stderr.setEncoding('utf8');
+    k.stderr.pipe(pt(`[${dir}]: `)).pipe(process.stderr);
+    
+    k.once('exit', code => {
+      
+      res.exitCode = code;
+      
+      if (code > 0) {
+        return cb({code, message: `Could not run the following command: ${chalk.bold(cmd)}`}, res);
+      }
+      
+      try {
+        res.deleted =  deletions;
+        cb(null, res);
+      }
+      catch (err) {
+        cb(err);
+      }
+      
+    });
+    
+  }, cb);
+  
+};
+
+
 export interface AllLocalBranches {
   exitCode: number,
   results: Array<{ branch: string, value: string }>
 }
 
-export const allLocalBranches = (dir: string, remote: string, cb: EVCb<AllLocalBranches>): void => {
+export const allLocalBranches = (dir: string, remote: string, ib: string, cb: EVCb<AllLocalBranches>): void => {
   
   getQueue(dir).push(cb => {
     
-    const k = cp.spawn('bash')
+    const k = cp.spawn('bash');
     
     const cmd = [
       `set -e`,
@@ -323,7 +383,7 @@ export const allLocalBranches = (dir: string, remote: string, cb: EVCb<AllLocalB
       `git branch -l | tr -d " *" | while read branch; do`,
       // for each local branch,
       // we check if the last commit is already merged into integration branch
-      `npp_check_merge "$branch" "master"`,
+      `npp_check_merge "$branch" "${ib}"`,
       `done`
     ].join('\n');
     
