@@ -2,7 +2,7 @@
 
 import * as async from 'async';
 import {EVCb, Task} from './index';
-import {getUniqueList} from './utils';
+import * as nppUtils from './utils';
 import log from './logger';
 
 const queues = new Map<string, async.AsyncQueue<Task>>();
@@ -27,15 +27,16 @@ export const getLocks = (locks: Array<string>, cb: FFirst, final: EVCb<any>): vo
   
   // given a list of directory paths / locks, we get a lock on all
   
-  const filtered = getUniqueList(locks);
+  const filtered = nppUtils.getUniqueList(locks);
   
-  async.map<string, any, EVCb<any>>(filtered, (v, cb) => {
+  async.map<string, EVCb<any>, any>(filtered, (v, cb) => {
       
       getQueue(v).push(callback => {
         cb(null, callback);
       });
       
     },
+    
     (err, results) => {
       
       if (err) {
@@ -45,7 +46,7 @@ export const getLocks = (locks: Array<string>, cb: FFirst, final: EVCb<any>): vo
       cb((err, result) => {
         
         // always unlock all locks
-        results.forEach(v => v());
+        results.forEach(v => v(null));
         final(err, result);
         
       });

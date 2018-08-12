@@ -46,6 +46,7 @@ export const assertString = (str: string) : string => {
   return str;
 };
 
+
 export const wrapString = (count: number, str: string) => {
   const letters = [], ln = str.length;
   
