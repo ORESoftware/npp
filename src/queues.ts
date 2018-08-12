@@ -28,6 +28,10 @@ export const getLocks = (locks: Array<string>, cb: FFirst, final: EVCb<any>): vo
   
   const filtered = getUniqueList(locks);
   
+  if(filtered.length > 1){
+    throw 'this not good.';
+  }
+  
   async.map<string, any, EVCb<any>>(filtered, (v, cb) => {
       
       getQueue(v).push(callback => {
