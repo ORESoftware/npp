@@ -366,7 +366,7 @@ export const getBranchWithMostRecentNPPChange = (dir: string, repoDir: string, c
     
     const cmd = [
       `sha="$(git log --all --format=format:%H -n 1 -- .npp.json)"`,
-      `git branch  --contains "$sha" | tr -d " *" | xargs`  // xargs will put everything on one line
+      `git branch --all  --contains "$sha" | tr -d " *" | xargs`  // xargs will put everything on one line
     ].join('\n');
     
     k.stdin.end(cmd);

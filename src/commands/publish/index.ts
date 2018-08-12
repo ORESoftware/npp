@@ -726,24 +726,27 @@ async.autoInject({
         const releaseName = v.releaseBranchName;
         const tempBranch = v.tempFeatureBranch;
         const fullMasterBranch = v.masterBranch.branchName;
+        const fullIntegrationBranch = v.integrationBranch.branchName;
+        
         const k = cp.spawn('bash');
         
         const cmd = [
           `cd ${v.path}`,
           `git fetch origin`,
           `npp_check_merge "${releaseName}" "${fullMasterBranch}"`,
+          `npp_check_merge "${releaseName}" "${fullIntegrationBranch}"`
         ]
           .join(' && ');
         
         const result = {
-          checkMerge: ''
+          checkMerged: [] as Array<string>
         };
         
         k.stdin.end(cmd);
         k.stderr.pipe(pt(chalk.yellow.bold(`[publishing ${v.name}]: `))).pipe(process.stderr);
         
-        k.stdout.pipe(stdio.createParser()).once(stdio.stdEventName, v => {
-          result.checkMerge = v;
+        k.stdout.pipe(stdio.createParser()).on(stdio.stdEventName, v => {
+          result.checkMerged.push(v);
         });
         
         k.once('exit', code => {
@@ -765,7 +768,9 @@ async.autoInject({
           let merged = false;
           
           try {
-            merged = JSON.parse(result.checkMerge).value === 'merged';
+            merged = result.checkMerged.every(v => {
+              return JSON.parse(v).value === 'merged'
+            });
           }
           catch (err) {
             return cb(err);
