@@ -118,6 +118,7 @@ export interface NPMRegistryShasums {
 export const getNPMTarballData = function (dir: string, repoDir: string, name: string, cb: EVCb<NPMRegistryShasums>) {
   
   getLocks([dir, repoDir], cb => {
+    
     const k = cp.spawn('bash');
     const id = shortid.generate();
     const p = `$HOME/.npp/temp/${id}`;

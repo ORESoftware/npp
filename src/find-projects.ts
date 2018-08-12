@@ -358,7 +358,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                     return process.nextTick(cb, null, []);
                   }
                   
-                  git.deleteLocalBranches(dir, checkMergedForAllLocalBranches, '<remote>', cb);
+                  git.deleteLocalBranches(dir, repoDir, checkMergedForAllLocalBranches, '<remote>', cb);
                 },
                 
                 readPackageJsonAndNPP(cb: EVCb<nppUtils.JSONData>) {
@@ -383,11 +383,11 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                 
                 checkMergedForAllLocalBranches(readPackageJsonAndNPP: nppUtils.JSONData, cb: EVCb<git.AllLocalBranches>) {
                   const ib = readPackageJsonAndNPP.nppJSON.vcsInfo.integration;
-                  git.allLocalBranches(repoDir, name, ib, cb);
+                  git.allLocalBranches(dir, repoDir, name, ib, cb);
                 },
                 
                 showGitStash(cb: EVCb<git.GitStashShow>) {
-                  git.getStash(repoDir, name, cb);
+                  git.getStash(dir, repoDir, name, cb);
                 }
               },
               

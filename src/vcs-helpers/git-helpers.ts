@@ -148,8 +148,6 @@ export const getStatusOfCurrentBranch = (dir: string, repoDir: string, remote: s
   
   getLocks([dir, repoDir], cb => {
     
-    // getQueue(dir).push(cb => {
-    
     const k = cp.spawn('bash');
     
     const result = {
@@ -222,8 +220,6 @@ export const getCurrentBranchName = (dir: string, repoDir: string, remote: strin
   
   getLocks([dir, repoDir], cb => {
     
-    // getQueue(dir).push(cb => {
-    
     const k = cp.spawn('bash');
     
     const cmd = `cd "${dir}" && git rev-parse --abbrev-ref HEAD`;
@@ -263,9 +259,9 @@ export interface GitRemoteData {
   gitRemoteURL: string
 }
 
-export const getRemoteURL = (dir: string, remote: string, cb: EVCb<GitRemoteData>): void => {
+export const getRemoteURL = (dir: string, repoDir: string, remote: string, cb: EVCb<GitRemoteData>): void => {
   
-  getQueue(dir).push(cb => {
+  getLocks([dir, repoDir], cb => {
     
     const k = cp.spawn('bash');
     
@@ -307,9 +303,9 @@ export interface DeletedLocalBranches {
   deleted: Array<string>
 }
 
-export const deleteLocalBranches = (dir: string, branches: AllLocalBranches, remote: string, cb: EVCb<DeletedLocalBranches>): void => {
+export const deleteLocalBranches = (dir: string, repoDir: string, branches: AllLocalBranches, remote: string, cb: EVCb<DeletedLocalBranches>): void => {
   
-  getQueue(dir).push(cb => {
+  getLocks([dir, repoDir], cb => {
     
     const k = cp.spawn('bash');
     
@@ -360,9 +356,9 @@ export interface AllLocalBranches {
   results: Array<{ branch: string, value: string }>
 }
 
-export const allLocalBranches = (dir: string, remote: string, ib: string, cb: EVCb<AllLocalBranches>): void => {
+export const allLocalBranches = (dir: string, repoDir: string, remote: string, ib: string, cb: EVCb<AllLocalBranches>): void => {
   
-  getQueue(dir).push(cb => {
+  getLocks([dir, repoDir], cb => {
     
     const k = cp.spawn('bash');
     
@@ -419,9 +415,9 @@ export interface GitStashShow {
   gitStash: string
 }
 
-export const getStash = (dir: string, name: string, cb: EVCb<GitStashShow>): void => {
+export const getStash = (dir: string, repoDir: string, name: string, cb: EVCb<GitStashShow>): void => {
   
-  getQueue(dir).push(cb => {
+  getLocks([dir, repoDir], cb => {
     
     const k = cp.spawn('bash');
     
