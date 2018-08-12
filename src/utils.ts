@@ -13,6 +13,21 @@ import * as fs from 'fs';
 import * as assert from "assert";
 import log from './logger';
 
+
+export const getUniqueList =  (a: Array<any>) : Array<any> => {
+  
+  const set = new Set<any>();
+  
+  for(let i = 0; i < a.length; i++){
+    if(!set.has(a[i])){
+      set.add(a[i]);
+    }
+  }
+  
+  return Array.from(set.values());
+  
+};
+
 export const flattenDeep = function (a: Array<any>): Array<any> {
   return a.reduce((acc, val) => Array.isArray(val) ? acc.concat(flattenDeep(val)) : acc.concat(val), []);
 };

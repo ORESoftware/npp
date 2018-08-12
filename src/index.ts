@@ -9,6 +9,8 @@ export const r2gSmokeTest = function () {
 };
 
 
+export type Task = (cb: EVCb<any>) => void;
+
 export interface NppJSONConf {
   vcsType: 'svn' | 'git' | 'hg',
   vcsInfo: {

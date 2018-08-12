@@ -205,7 +205,17 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
             
             readPackageJSON(cb: EVCb<any>) {
               fs.readFile(item, cb);
-            }
+            },
+  
+            getRepoDir(cb: EVCb<string>) {
+              git.getGitRepoPath(dir, '<remote>', (err, v) => {
+                if (!err && !(v.path && typeof v.path === 'string')) {
+                  log.error(err, v);
+                  err = 'Could not find corresponding git repo for dir: ' + chalk.magenta.bold(dir);
+                }
+                cb(err, v && v.path);
+              });
+            },
             
           }, (err, results) => {
             
@@ -216,6 +226,8 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
             if (err) {
               return cb(err);
             }
+            
+            const repoDir = <string>results.getRepoDir;
             
             let parsedPkgJSON: any = null;
             
@@ -302,29 +314,18 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                     });
                   }
                   
-                  npmh.getLatestVersionFromNPMRegistry(dir, name, cb);
+                  npmh.getLatestVersionFromNPMRegistry(dir, repoDir, name, cb);
                 },
                 
-                getRepoDir(cb: EVCb<string>) {
-                  git.getGitRepoPath(dir, '<remote>', (err, v) => {
-                    if (!err && !(v.path && typeof v.path === 'string')) {
-                      log.error(err, v);
-                      err = 'Could not find corresponding git repo for dir: ' + chalk.magenta.bold(dir);
-                    }
-                    cb(err, v && v.path);
-                  });
+                checkGitStatus(getLocalDistDataCurrentBranch: any, cb: EVCb<git.GitStatusData>) {
+                  git.getStatusOfCurrentBranch(dir, repoDir, '<remote>', cb);
                 },
                 
-                checkGitStatus(getRepoDir: string, getLocalDistDataCurrentBranch: any, cb: EVCb<git.GitStatusData>) {
-                  git.getStatusOfCurrentBranch(getRepoDir, '<remote>', cb);
-                },
-                
-                getBranchName(getRepoDir: string, cb: EVCb<git.BranchNameData>) {
-                  git.getCurrentBranchName(getRepoDir, '<remote>', cb);
+                getBranchName(cb: EVCb<git.BranchNameData>) {
+                  git.getCurrentBranchName(dir, repoDir, '<remote>', cb);
                 },
                 
                 getStatusOfIntegrationBranch(
-                  getRepoDir: string,
                   checkGitStatus: any,
                   getLocalDistDataCurrentBranch: any,
                   readPackageJsonAndNPP: nppUtils.JSONData,
@@ -332,11 +333,11 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                   
                   // note we need to check the status of the current branch before checking out the integration branch
                   const ib = readPackageJsonAndNPP.nppJSON.vcsInfo.integration;
-                  git.getStatusOfIntegrationBranch(getRepoDir, '<remote>', ib, cb);
+                  git.getStatusOfIntegrationBranch(dir, repoDir, '<remote>', ib, cb);
                 },
                 
                 getRegistryDistData(cb: EVCb<npmh.DistDataResult>) {
-                  npmh.getDistDataFromNPMRegistry(dir, name, cb);
+                  npmh.getDistDataFromNPMRegistry(dir, repoDir, name, cb);
                 },
                 
                 getLocalDistDataCurrentBranch(cb: EVCb<nppUtils.LocalDistDataResult>) {
@@ -348,7 +349,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                 },
                 
                 getNPMTarballData(cb: EVCb<npmh.NPMRegistryShasums>) {
-                  npmh.getNPMTarballData(dir, name, cb)
+                  npmh.getNPMTarballData(dir, repoDir, name, cb)
                 },
                 
                 deleteLocalBranches(checkMergedForAllLocalBranches: AllLocalBranches, cb: EVCb<git.DeletedLocalBranches>) {
@@ -380,13 +381,13 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                   });
                 },
                 
-                checkMergedForAllLocalBranches(getRepoDir: string, readPackageJsonAndNPP: nppUtils.JSONData, cb: EVCb<git.AllLocalBranches>) {
+                checkMergedForAllLocalBranches(readPackageJsonAndNPP: nppUtils.JSONData, cb: EVCb<git.AllLocalBranches>) {
                   const ib = readPackageJsonAndNPP.nppJSON.vcsInfo.integration;
-                  git.allLocalBranches(getRepoDir, name, ib, cb);
+                  git.allLocalBranches(repoDir, name, ib, cb);
                 },
                 
-                showGitStash(getRepoDir: string, cb: EVCb<git.GitStashShow>) {
-                  git.getStash(getRepoDir, name, cb);
+                showGitStash(cb: EVCb<git.GitStashShow>) {
+                  git.getStash(repoDir, name, cb);
                 }
               },
               

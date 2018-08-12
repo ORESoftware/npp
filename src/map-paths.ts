@@ -23,9 +23,9 @@ export const mapPaths = (searchRoots: Array<string>, root: string, cb: EVCb<Arra
   
   k.stdout.on('data', (d: string) => {
     String(d || '').split('\n')
-      .map(v => String(v || '').trim())
-      .filter(Boolean)
-      .forEach(v => {
+    .map(v => String(v || '').trim())
+    .filter(Boolean)
+    .forEach(v => {
       results.push(v);
     });
   });
@@ -40,19 +40,19 @@ export const mapPaths = (searchRoots: Array<string>, root: string, cb: EVCb<Arra
     const pths: Array<string> = [];
     
     results.map(d => String(d || '').trim())
-      .filter(Boolean)
-      .sort((a, b) => (a.length - b.length))
-      .forEach(v => {
-        
-        const s = !pths.some(p => {
-          return v.startsWith(p + '/');
-        });
-        
-        if (s) {
-          pths.push(v);
-        }
-        
+    .filter(Boolean)
+    .sort((a, b) => (a.length - b.length))
+    .forEach(v => {
+      
+      const s = !pths.some(p => {
+        return v.startsWith(p + '/');
       });
+      
+      if (s) {
+        pths.push(v);
+      }
+      
+    });
     
     const mappedPaths = pths.map(v => {
       return path.isAbsolute(v) ? v : path.resolve(root + '/' + v);

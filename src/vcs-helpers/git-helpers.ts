@@ -2,31 +2,17 @@
 
 import * as cp from 'child_process';
 import log from '../logger';
-import {EVCb} from "../index";
+import {EVCb, Task} from "../index";
 import chalk from "chalk";
 import async = require('async');
 import * as stdio from 'json-stdio';
 import * as path from 'path';
 import pt from 'prepend-transform';
+import {getLocks, getQueue} from '../queues';
 
 ////////////////////////////////////////////////////////////////
 
-export type Task = (cb: EVCb<any>) => void;
-
-const gitRepoQueue = async.queue<Task, any>((task, cb) => task(cb), 1);
-const queues = new Map<string, async.AsyncQueue<Task>>();
-
-const getQueue = (dir: string): async.AsyncQueue<Task> => {
-  
-  if (!dir) {
-    throw new Error('Empty string passed to ' + getQueue.name);
-  }
-  
-  if (!queues.has(dir)) {
-    queues.set(dir, async.queue<Task, any>((task, cb) => task(cb), 1));
-  }
-  return queues.get(dir);
-};
+// const gitRepoQueue = async.queue<Task, any>((task, cb) => task(cb), 1);
 
 export interface GitRepoPath {
   exitCode: number,
@@ -35,47 +21,42 @@ export interface GitRepoPath {
 
 export const getGitRepoPath = function (dir: string, remote: string, cb: EVCb<GitRepoPath>) {
   
-  
-    gitRepoQueue.push(cb => {
-  
-      getQueue(dir).push(cb => {
+  getLocks([dir], cb => {
+    
+    const k = cp.spawn('bash');
+    
+    const result = <GitRepoPath>{
+      exitCode: null as number,
+      path: ''
+    };
+    
+    k.stderr.setEncoding('utf8');
+    k.stderr.pipe(pt(chalk.yellow.bold(`${dir}: `))).pipe(process.stderr);
+    
+    k.stdout.on('data', d => {
+      result.path += String(d || '').trim();
+    });
+    
+    const cmd = `cd "${dir}" && git rev-parse --show-toplevel`;
+    
+    setTimeout(() => {
+      k.stdin.end(cmd);
+    }, 10);
+    
+    k.once('exit', code => {
       
-      const k = cp.spawn('bash');
+      result.exitCode = code;
+      let err = null;
       
-      const result = <GitRepoPath>{
-        exitCode: null as number,
-        path: ''
-      };
+      if (code > 0) {
+        log.error(`Could not run "${cmd}" at path:`, dir);
+        err = {code, message: `Could not run the following command: ${chalk.bold(cmd)}`};
+      }
       
-      k.stderr.setEncoding('utf8');
-      k.stderr.pipe(pt(chalk.yellow.bold(`${dir}: `))).pipe(process.stderr);
+      result.path = String(result.path || '').trim();
+      cb(err, result);
       
-      k.stdout.on('data', d => {
-        result.path += String(d || '').trim();
-      });
-      
-      const cmd = `cd "${dir}" && git rev-parse --show-toplevel`;
-      
-      setTimeout(() => {
-        k.stdin.end(cmd);
-      }, 10);
-      
-      k.once('exit', code => {
-        
-        result.exitCode = code;
-        let err = null;
-        
-        if (code > 0) {
-          log.error(`Could not run "${cmd}" at path:`, dir);
-          err = {code, message: `Could not run the following command: ${chalk.bold(cmd)}`};
-        }
-        
-        result.path = String(result.path || '').trim();
-        cb(err, result);
-        
-      });
-      
-    }, cb);
+    });
     
   }, cb);
   
@@ -87,9 +68,9 @@ export interface GitStatusData {
   workingDirectoryClean: boolean
 }
 
-export const getStatusOfIntegrationBranch = (dir: string, remote: string, integration: string, cb: EVCb<GitStatusData>): void => {
+export const getStatusOfIntegrationBranch = (dir: string, repoDir: string, remote: string, integration: string, cb: EVCb<GitStatusData>): void => {
   
-  getQueue(dir).push(cb => {
+  getLocks([dir, repoDir], cb => {
     
     const k = cp.spawn('bash');
     
@@ -120,7 +101,7 @@ export const getStatusOfIntegrationBranch = (dir: string, remote: string, integr
       `git checkout ${tempIntegrationBranch}`,
       `json_stdio "$(git status -v |  tr '\r\n' ' ')"` // replace newline char with space
     ]
-      .join(' && ');
+    .join(' && ');
     
     k.stdin.end(cmd);
     
@@ -163,9 +144,11 @@ export const getStatusOfIntegrationBranch = (dir: string, remote: string, integr
   
 };
 
-export const getStatusOfCurrentBranch = (dir: string, remote: string, cb: EVCb<GitStatusData>): void => {
+export const getStatusOfCurrentBranch = (dir: string, repoDir: string, remote: string, cb: EVCb<GitStatusData>): void => {
   
-  getQueue(dir).push(cb => {
+  getLocks([dir, repoDir], cb => {
+    
+    // getQueue(dir).push(cb => {
     
     const k = cp.spawn('bash');
     
@@ -235,9 +218,11 @@ export interface BranchNameData {
   branchName: string
 }
 
-export const getCurrentBranchName = (dir: string, remote: string, cb: EVCb<BranchNameData>): void => {
+export const getCurrentBranchName = (dir: string, repoDir: string, remote: string, cb: EVCb<BranchNameData>): void => {
   
-  getQueue(dir).push(cb => {
+  getLocks([dir, repoDir], cb => {
+    
+    // getQueue(dir).push(cb => {
     
     const k = cp.spawn('bash');
     
