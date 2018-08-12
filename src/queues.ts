@@ -3,6 +3,7 @@
 import * as async from 'async';
 import {EVCb, Task} from './index';
 import {getUniqueList} from './utils';
+import log from './logger';
 
 const queues = new Map<string, async.AsyncQueue<Task>>();
 
@@ -27,10 +28,6 @@ export const getLocks = (locks: Array<string>, cb: FFirst, final: EVCb<any>): vo
   // given a list of directory paths / locks, we get a lock on all
   
   const filtered = getUniqueList(locks);
-  
-  if(filtered.length > 1){
-    throw 'this not good.';
-  }
   
   async.map<string, any, EVCb<any>>(filtered, (v, cb) => {
       
