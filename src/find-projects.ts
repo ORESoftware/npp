@@ -206,7 +206,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
             readPackageJSON(cb: EVCb<any>) {
               fs.readFile(item, cb);
             },
-  
+            
             getRepoDir(cb: EVCb<string>) {
               git.getGitRepoPath(dir, '<remote>', (err, v) => {
                 if (!err && !(v.path && typeof v.path === 'string')) {
@@ -354,7 +354,7 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                 
                 deleteLocalBranches(checkMergedForAllLocalBranches: AllLocalBranches, cb: EVCb<git.DeletedLocalBranches>) {
                   
-                  if(!opts.delete){
+                  if (!opts.delete) {
                     return process.nextTick(cb, null, []);
                   }
                   
@@ -379,6 +379,10 @@ export const getFSMap = function (searchRoots: Array<string>, opts: any, package
                     cb(null, val);
                     
                   });
+                },
+                
+                mostRecentNPPChange(cb: EVCb<git.MostRecentNPPChangeBranch>) {
+                  git.getBranchWithMostRecentNPPChange(dir, repoDir, cb);
                 },
                 
                 checkMergedForAllLocalBranches(readPackageJsonAndNPP: nppUtils.JSONData, cb: EVCb<git.AllLocalBranches>) {

@@ -37,7 +37,7 @@ export const getLocks = (locks: Array<string>, cb: FFirst, final: EVCb<any>): vo
       
     },
     
-    (err, results) => {
+    (err, callbacks) => {
       
       if (err) {
         return final(err);
@@ -46,7 +46,7 @@ export const getLocks = (locks: Array<string>, cb: FFirst, final: EVCb<any>): vo
       cb((err, result) => {
         
         // always unlock all locks
-        results.forEach(v => v(null));
+        callbacks.forEach(v => v(null));
         final(err, result);
         
       });

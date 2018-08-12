@@ -351,6 +351,62 @@ export const deleteLocalBranches = (dir: string, repoDir: string, branches: AllL
   
 };
 
+
+export interface MostRecentNPPChangeBranch {
+  exitCode: number,
+  result: string,
+  branches: Array<string>  // all these branches have the most recent .npp.json file
+}
+
+export const getBranchWithMostRecentNPPChange = (dir: string, repoDir: string, cb: EVCb<MostRecentNPPChangeBranch>): void => {
+  
+  getLocks([dir, repoDir], cb => {
+    
+    const k = cp.spawn('bash');
+    
+    const cmd = [
+      `sha="$(git log --all --format=format:%H -n 1 -- .npp.json)"`,
+      `git branch  --contains "$sha" | tr -d " *" | xargs`  // xargs will put everything on one line
+    ].join('\n');
+    
+    k.stdin.end(cmd);
+    
+    const res = <MostRecentNPPChangeBranch>{
+      exitCode: null,
+      result: ''
+    };
+    
+    k.stderr.setEncoding('utf8');
+    k.stderr.pipe(pt(chalk.yellow.bold(`${dir}: `))).pipe(process.stderr);
+    
+    k.stdout.on('data', d => {
+      res.result += ' ' + String(d);
+    });
+    
+    k.once('exit', code => {
+      
+      res.exitCode = code;
+      
+      if (code > 0) {
+        return cb({code, message: `Could not run the following command: ${chalk.bold(cmd)}`}, res);
+      }
+      
+      try{
+        res.branches = String(res.result).trim().split(/\s+/g).map(v => String(v || '').trim()).filter(Boolean);
+        log.info('branches with most recent .npp.json file:', res.branches);
+        cb(null, res);
+      }
+      catch(err){
+        cb(err, res);
+      }
+      
+      
+    });
+    
+  }, cb);
+  
+};
+
 export interface AllLocalBranches {
   exitCode: number,
   results: Array<{ branch: string, value: string }>
