@@ -13,7 +13,7 @@ code="";
 
 if [ "$merge_base" != "$merge_source_current_commit" ]; then
     result="unmerged"
-    code=0;  ### use code 1 in the future perhaps
+    code=0;  ###  <<<<<<<<<<<<<<<<<< use code 1 in the future perhaps
 else
     result="merged"
     code=0;
