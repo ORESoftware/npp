@@ -1,0 +1,21 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oresoftware/npm-link-up/master/assets/nlu.schema.json",
+  "npm-link-up": true,
+  "linkable": true,
+  "linkToItself": false,
+  "comments": [
+    "your comments go here"
+  ],
+  "searchRoots": [
+    "$HOME/WebstormProjects"
+  ],
+  "ignore": [
+    "/node_modules/",
+    "/.git/"
+  ],
+  "list": [
+    "json-stdio",
+    "prepend-transform",
+    "residence"
+  ]
+}
