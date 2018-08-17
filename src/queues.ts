@@ -7,7 +7,7 @@ import log from './logger';
 
 const queues = new Map<string, async.AsyncQueue<Task>>();
 
-export const getQueue = (dir: string): async.AsyncQueue<Task> => {
+const getQueue = (dir: string): async.AsyncQueue<Task> => {
   
   if (!dir) {
     throw new Error('Empty string passed to ' + getQueue.name);

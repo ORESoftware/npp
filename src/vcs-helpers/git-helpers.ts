@@ -8,7 +8,7 @@ import async = require('async');
 import * as stdio from 'json-stdio';
 import * as path from 'path';
 import pt from 'prepend-transform';
-import {getLocks, getQueue} from '../queues';
+import {getLocks} from '../queues';
 
 ////////////////////////////////////////////////////////////////
 
