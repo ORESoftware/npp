@@ -1,4 +1,7 @@
 
+[<img src="https://img.shields.io/badge/slack-npp-yellow.svg?logo=slack">](https://oresoftware.slack.com/messages/CCAD1H94G)
+
+
 ## NPP / @oresoftware/npp
 
 >
