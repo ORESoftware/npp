@@ -1,6 +1,6 @@
 
 
-<img width="200px" align="right" src="https://raw.githubusercontent.com/oresoftware/media/master/namespaces/npp/oresoftware-npp-border.png">
+<img width="200px" align="right" src="https://raw.githubusercontent.com/oresoftware/media/master/namespaces/npp/oresoftware-npp-border.png?foo">
 
 <br>
 
