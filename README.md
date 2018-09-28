@@ -5,6 +5,10 @@
 
 <br>
 
+[![Version](https://img.shields.io/npm/v/npp.svg?colorB=yellowgreen)](https://www.npmjs.com/package/npp)
+
+<br>
+
 ## NPP / @oresoftware/npp
 
 >
