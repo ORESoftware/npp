@@ -1,7 +1,7 @@
 
 ## NPP / @oresoftware/npp
 
-[![Join the chat at https://gitter.im/oresoftware/npp](https://badges.gitter.im/oresoftware/npp.svg)](https://gitter.im/oresoftware/npp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the NPP chat on Matrix](https://img.shields.io/badge/chat-Matrix-0dbd8b?logo=matrix)](https://matrix.to/#/#oresoftware_npp:gitter.im)
 
 >
 >  Publish your dependency trees to NPM with ease.
